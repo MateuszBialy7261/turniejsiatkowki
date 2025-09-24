@@ -43,7 +43,7 @@ export default function Home() {
         )}
       </header>
 
-      {/* TREŚĆ STRONY  */}
+      {/* TREŚĆ STRONY */}
       <main className="flex-grow container mx-auto p-8">
         <h2 className="text-3xl font-semibold mb-4">Witamy w systemie turniejowym</h2>
         <p className="text-lg">
