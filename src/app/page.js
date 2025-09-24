@@ -39,11 +39,11 @@ export default function Home() {
             <li><a href="#" className="block hover:underline">Cennik</a></li>
             <li><a href="#" className="block hover:underline">Kontakt</a></li>
             <li><a href="#" className="block hover:underline">Logowanie</a></li>
-          </ul>
+          </ul> 
         )}
       </header>
 
-      {/* TREŚĆ STRONY */}
+      {/* TREŚĆ STRONY  */}
       <main className="flex-grow container mx-auto p-8">
         <h2 className="text-3xl font-semibold mb-4">Witamy w systemie turniejowym</h2>
         <p className="text-lg">
