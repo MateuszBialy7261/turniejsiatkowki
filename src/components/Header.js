@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import MobileHeader from "./MobileHeader";
 import MobileMenu from "./MobileMenu";
 
@@ -11,21 +13,23 @@ export default function Header() {
       {/* Desktop header */}
       <nav className="hidden lg:flex container mx-auto justify-between items-center p-4">
         {/* Logo */}
-        <a href="/" className="flex items-center">
-          <img
+        <Link href="/" className="flex items-center">
+          <Image
             src="/logo.png"
             alt="Logo Turnieju"
+            width={96} // szerokość w px
+            height={96} // wysokość w px
             className="h-24 w-auto transition-transform duration-300 hover:scale-105"
           />
-        </a>
+        </Link>
 
         {/* Menu desktopowe */}
         <ul className="flex space-x-8 text-lg transition-all duration-300">
-          <li><a href="#" className="hover:text-blue-400 transition-colors">Teraz gramy</a></li>
-          <li><a href="#" className="hover:text-blue-400 transition-colors">Historia turniejów</a></li>
-          <li><a href="#" className="hover:text-blue-400 transition-colors">Zamów turniej</a></li>
-          <li><a href="#" className="hover:text-blue-400 transition-colors">Cennik</a></li>
-          <li><a href="#" className="hover:text-blue-400 transition-colors">Kontakt</a></li>
+          <li><Link href="#" className="hover:text-blue-400 transition-colors">Teraz gramy</Link></li>
+          <li><Link href="#" className="hover:text-blue-400 transition-colors">Historia turniejów</Link></li>
+          <li><Link href="#" className="hover:text-blue-400 transition-colors">Zamów turniej</Link></li>
+          <li><Link href="#" className="hover:text-blue-400 transition-colors">Cennik</Link></li>
+          <li><Link href="#" className="hover:text-blue-400 transition-colors">Kontakt</Link></li>
         </ul>
 
         {/* Prawa sekcja */}
@@ -38,16 +42,14 @@ export default function Header() {
               <span>📞</span><span>781-166-101</span>
             </a>
           </div>
-          <a href="/login" className="hover:text-blue-400 flex items-center space-x-2">
+          <Link href="/login" className="hover:text-blue-400 flex items-center space-x-2">
             <span>🔐</span><span>Logowanie</span>
-          </a>
+          </Link>
         </div>
       </nav>
 
-      {/* Mobile header */}
+      {/* Mobile header + menu */}
       <MobileHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-
-      {/* Mobile menu */}
       <MobileMenu menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
     </header>
   );
