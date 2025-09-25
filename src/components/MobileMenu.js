@@ -1,3 +1,5 @@
+"use client";
+
 export default function MobileMenu({ menuOpen, setMenuOpen }) {
   return (
     <div
