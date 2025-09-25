@@ -17,8 +17,8 @@ export default function Header() {
           <Image
             src="/logo.png"
             alt="Logo Turnieju"
-            width={96} // szerokość w px
-            height={96} // wysokość w px
+            width={96}
+            height={96}
             className="h-24 w-auto transition-transform duration-300 hover:scale-105"
           />
         </Link>
@@ -49,8 +49,10 @@ export default function Header() {
       </nav>
 
       {/* Mobile header + menu */}
-      <MobileHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
-      <MobileMenu menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <div className="lg:hidden">
+        <MobileHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        <MobileMenu menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      </div>
     </header>
   );
 }
