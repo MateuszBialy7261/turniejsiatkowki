@@ -1,6 +1,9 @@
 "use client";
 import { useState } from "react";
 import MobileMenu from "./MobileMenu";
+import Link from "next/link";
+import Image from "next/image";
+
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -9,13 +12,17 @@ export default function Header() {
     <header className="bg-[#d4edf8] text-black shadow-md">
       <nav className="container mx-auto flex justify-between items-center p-4">
         {/* Logo */}
-        <a href="/" className="flex items-center">
-          <img
-            src="/logo.png"
-            alt="Logo Turnieju"
-            className="h-24 w-auto transition-transform duration-300 hover:scale-105"
-          />
-        </a>
+       <Link href="/" className="flex items-center">
+            <Image 
+                src="/logo.png"
+                alt="Logo Turnieju"
+                width={100}   // możesz dopasować
+                height={100}  // proporcjonalnie
+                className="h-24 w-auto transition-transform duration-300 hover:scale-105"
+                priority      // logo ładuje się od razu
+            />
+            </Link>
+
 
         {/* Menu desktopowe */}
         <ul className="hidden lg:flex space-x-8 text-lg transition-all duration-300">
