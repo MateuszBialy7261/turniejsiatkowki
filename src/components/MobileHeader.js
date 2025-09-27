@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export default function MobileHeader({ menuOpen, setMenuOpen }) {
   return (
-    <nav className="flex justify-between items-center p-4 container mx-auto">
+    <nav className="flex lg:hidden justify-between items-center p-4 bg-[#d4edf8] shadow-md">
       {/* Logo */}
       <Link href="/" className="flex items-center">
         <Image
@@ -12,19 +12,19 @@ export default function MobileHeader({ menuOpen, setMenuOpen }) {
           alt="Logo Turnieju"
           width={64}
           height={64}
-          className="h-16 w-auto"
+          className="h-12 w-auto"
         />
       </Link>
 
       {/* Napis na środku */}
-      <div className="text-lg font-semibold">Turnieje minisiatkówki online</div>
+      <span className="text-lg font-semibold">Turnieje minisiatkówki online</span>
 
       {/* Hamburger */}
       <button
-        className="focus:outline-none text-2xl"
+        className="lg:hidden text-2xl focus:outline-none"
         onClick={() => setMenuOpen(!menuOpen)}
       >
-        {menuOpen ? "✖" : "☰"}
+        ☰
       </button>
     </nav>
   );

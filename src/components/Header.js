@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import MobileHeader from "./MobileHeader";
 import MobileMenu from "./MobileMenu";
+import { FaFacebook } from "react-icons/fa";
+
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,19 +35,40 @@ export default function Header() {
         </ul>
 
         {/* Prawa sekcja */}
-        <div className="flex items-center space-x-6 ml-6">
-          <div className="flex flex-col text-right">
-            <a href="mailto:sedzia@mateuszbialy.pl" className="hover:text-blue-400 flex items-center space-x-2">
-              <span>📧</span><span>sedzia@mateuszbialy.pl</span>
-            </a>
-            <a href="tel:781166101" className="hover:text-blue-400 flex items-center space-x-2">
-              <span>📞</span><span>781-166-101</span>
-            </a>
-          </div>
-          <Link href="/login" className="hover:text-blue-400 flex items-center space-x-2">
-            <span>🔐</span><span>Logowanie</span>
-          </Link>
-        </div>
+      {/* Prawa sekcja */}
+    <div className="flex items-center space-x-6 ml-6">
+      <div className="flex flex-col text-right">
+        <a
+          href="mailto:sedzia@mateuszbialy.pl"
+          className="hover:text-blue-400 flex items-center space-x-2 transition-colors duration-300"
+        >
+          <span>📧</span><span>sedzia@mateuszbialy.pl</span>
+        </a>
+        <a
+          href="tel:781166101"
+          className="hover:text-blue-400 flex items-center space-x-2 transition-colors duration-300"
+        >
+          <span>📞</span><span>781-166-101</span>
+        </a>
+      </div>
+
+      <Link
+        href="/login"
+        className="hover:text-blue-400 flex items-center space-x-2 transition-colors duration-300"
+      >
+        <span>🔐</span><span>Logowanie</span>
+      </Link>
+
+      <a
+        href="https://www.facebook.com/profile.php?id=61556020260341"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:text-blue-400 transition-colors duration-300"
+      >
+        <FaFacebook className="text-2xl" />
+      </a>
+    </div>
+
       </nav>
 
       {/* Mobile header + menu */}

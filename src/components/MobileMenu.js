@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { FaFacebook } from "react-icons/fa";
 
 export default function MobileMenu({ menuOpen, setMenuOpen }) {
   return (
@@ -71,6 +72,19 @@ export default function MobileMenu({ menuOpen, setMenuOpen }) {
                 <span>🔐</span><span>Logowanie</span>
               </Link>
             </li>
+            <li>
+              <a
+                href="https://www.facebook.com/profile.php?id=61556020260341"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-400 flex items-center space-x-2"
+                onClick={() => setMenuOpen(false)}
+              >
+                <FaFacebook className="text-xl" />
+                <span>Facebook</span>
+              </a>
+          </li>
+
           </ul>
         </nav>
       </aside>
