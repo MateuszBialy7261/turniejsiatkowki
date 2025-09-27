@@ -1,12 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function Page() {
-  const [role, setRole] = useState("");
+export default function RegisterPage() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
+    confirmEmail: "",
     phone: "",
     age: "",
     clubName: "",
@@ -15,9 +15,14 @@ export default function Page() {
     license: false,
     helperAnswer: "",
     rodo: false,
+    password: "",
+    confirmPassword: "",
+    role: "",
   });
 
-  // Obsługa zmiany pól formularza
+  const [message, setMessage] = useState(null);
+
+  // Obsługa pól
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -26,7 +31,7 @@ export default function Page() {
     });
   };
 
-  // Walidacja numeru telefonu w formacie 123-456-789
+  // Format telefonu
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 3 && value.length <= 6) {
@@ -43,14 +48,68 @@ export default function Page() {
   };
 
   // Submit
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.rodo) {
-      alert("Musisz wyrazić zgodę na przetwarzanie danych osobowych.");
+
+    // Walidacja e-maila
+    if (formData.email !== formData.confirmEmail) {
+      setMessage({ type: "error", text: "❌ Adresy e-mail nie są takie same." });
       return;
     }
-    console.log("Dane do rejestracji:", formData);
+
+    // Walidacja hasła
+    if (formData.password !== formData.confirmPassword) {
+      setMessage({ type: "error", text: "❌ Hasła nie są takie same." });
+      return;
+    }
+
+    // Walidacja pytania pomocniczego
+    if (formData.helperAnswer.trim() !== "5") {
+      setMessage({
+        type: "error",
+        text: "❌ Błędna odpowiedź na pytanie pomocnicze.",
+      });
+      return;
+    }
+
+    // Walidacja RODO
+    if (!formData.rodo) {
+      setMessage({
+        type: "error",
+        text: "❌ Musisz wyrazić zgodę na przetwarzanie danych osobowych.",
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage({
+          type: "success",
+          text: "✅ Twoje konto zostało zarejestrowane. Aby móc się zalogować, aktywuj konto przez link wysłany na adres e-mail.",
+        });
+      } else {
+        setMessage({ type: "error", text: "❌ Błąd: " + data.error });
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: "❌ Wystąpił błąd połączenia." });
+    }
   };
+
+  // Autozamknięcie komunikatu po 5 sek
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex items-center justify-center py-12">
@@ -60,6 +119,26 @@ export default function Page() {
       >
         <h2 className="text-2xl font-bold mb-4">Rejestracja</h2>
 
+        {/* Komunikat */}
+        {message && (
+          <div
+            className={`mb-4 p-3 rounded relative shadow-md ${
+              message.type === "success"
+                ? "bg-[#d4edf8] text-black"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            <span>{message.text}</span>
+            <button
+              onClick={() => setMessage(null)}
+              type="button"
+              className="absolute top-2 right-2 text-lg font-bold hover:opacity-70"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Imię */}
         <label className="block">
           <span className="text-gray-700">Imię</span>
@@ -68,7 +147,7 @@ export default function Page() {
             name="firstName"
             value={formData.firstName}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
           />
         </label>
@@ -81,7 +160,59 @@ export default function Page() {
             name="lastName"
             value={formData.lastName}
             onChange={handleChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            required
+          />
+        </label>
+
+        {/* E-mail */}
+        <label className="block">
+          <span className="text-gray-700">Adres e-mail</span>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            required
+          />
+        </label>
+
+        {/* Potwierdzenie e-maila */}
+        <label className="block">
+          <span className="text-gray-700">Potwierdź adres e-mail</span>
+          <input
+            type="email"
+            name="confirmEmail"
+            value={formData.confirmEmail}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            required
+          />
+        </label>
+
+        {/* Hasło */}
+        <label className="block">
+          <span className="text-gray-700">Hasło</span>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            required
+          />
+        </label>
+
+        {/* Potwierdzenie hasła */}
+        <label className="block">
+          <span className="text-gray-700">Potwierdź hasło</span>
+          <input
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
           />
         </label>
@@ -91,9 +222,9 @@ export default function Page() {
           <span className="text-gray-700">Rola</span>
           <select
             name="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+            value={formData.role}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
           >
             <option value="">Wybierz rolę</option>
@@ -103,20 +234,8 @@ export default function Page() {
         </label>
 
         {/* Pola dla sędziego */}
-        {role === "sedzia" && (
+        {formData.role === "sedzia" && (
           <>
-            <label className="block">
-              <span className="text-gray-700">Adres e-mail</span>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
-                required
-              />
-            </label>
-
             <label className="block">
               <span className="text-gray-700">Numer telefonu</span>
               <input
@@ -124,13 +243,12 @@ export default function Page() {
                 name="phone"
                 value={formData.phone}
                 onChange={handlePhoneChange}
-                maxLength={11}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
                 placeholder="123-456-789"
+                maxLength={11}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
                 required
               />
             </label>
-
             <label className="block">
               <span className="text-gray-700">Wiek</span>
               <input
@@ -138,18 +256,17 @@ export default function Page() {
                 name="age"
                 value={formData.age}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
                 required
               />
             </label>
-
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 name="license"
                 checked={formData.license}
                 onChange={handleChange}
-                className="h-5 w-5 text-blue-400 border-gray-300 rounded focus:ring-blue-300 cursor-pointer"
+                className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer"
               />
               <span>Czy posiadasz licencję sędziego?</span>
             </label>
@@ -157,7 +274,7 @@ export default function Page() {
         )}
 
         {/* Pola dla organizatora */}
-        {role === "organizator" && (
+        {formData.role === "organizator" && (
           <>
             <label className="block">
               <span className="text-gray-700">Pełna nazwa klubu</span>
@@ -166,11 +283,10 @@ export default function Page() {
                 name="clubName"
                 value={formData.clubName}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
                 required
               />
             </label>
-
             <label className="block">
               <span className="text-gray-700">NIP</span>
               <input
@@ -178,11 +294,10 @@ export default function Page() {
                 name="nip"
                 value={formData.nip}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
                 required
               />
             </label>
-
             <label className="block">
               <span className="text-gray-700">Adres</span>
               <input
@@ -190,11 +305,10 @@ export default function Page() {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
                 required
               />
             </label>
-
             <label className="block">
               <span className="text-gray-700">Numer telefonu</span>
               <input
@@ -202,21 +316,9 @@ export default function Page() {
                 name="phone"
                 value={formData.phone}
                 onChange={handlePhoneChange}
-                maxLength={11}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
                 placeholder="123-456-789"
-                required
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-gray-700">Adres e-mail</span>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+                maxLength={11}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
                 required
               />
             </label>
@@ -234,7 +336,7 @@ export default function Page() {
             value={formData.helperAnswer}
             onChange={handleChange}
             placeholder="Twoja odpowiedź"
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-300 focus:border-blue-300"
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
           />
         </label>
@@ -246,15 +348,17 @@ export default function Page() {
             name="rodo"
             checked={formData.rodo}
             onChange={handleChange}
-            className="h-5 w-5 text-blue-400 border-gray-300 rounded focus:ring-blue-300 cursor-pointer mt-1"
+            className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer mt-1"
             required
           />
           <span className="text-xs text-gray-600">
             Wyrażam zgodę na przetwarzanie moich danych osobowych przez{" "}
-            <strong>Smart Web Solutions Mateusz Biały</strong> (właściciel aplikacji) 
-            w celach utworzenia konta i realizacji zadań turniejowych. 
-            W razie wątpliwości prosimy o{" "}
-            <a href="/kontakt" className="text-blue-500 hover:underline">kontakt</a>.
+            <strong>Smart Web Solutions Mateusz Biały</strong> (właściciel aplikacji) w
+            celach utworzenia konta i realizacji zadań turniejowych. W razie
+            wątpliwości prosimy o{" "}
+            <a href="/kontakt" className="text-blue-500 hover:underline">
+              kontakt
+            </a>.
           </span>
         </label>
 
