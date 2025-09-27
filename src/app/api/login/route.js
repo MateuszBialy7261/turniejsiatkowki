@@ -1,40 +1,48 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { supabase } from "@/lib/supabaseClient";
 
 export async function POST(req) {
+  const { supabase } = await import("@/lib/supabaseClient");
+
   try {
     const { email, password } = await req.json();
 
-    // szukamy użytkownika
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .limit(1);
-
-    if (error) throw error;
-
-    const user = users[0];
-
-    if (!user) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
-    }
-
-    if (!user.is_active) {
-      return NextResponse.json({ status: "inactive" }, { status: 200 });
-    }
-
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: "invalid_password" },
-        { status: 401 }
+        { error: "Email i hasło są wymagane." },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json({ status: "success", user: user.id }, { status: 200 });
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (error || !user) {
+      return NextResponse.json(
+        { error: "Nie znaleziono użytkownika. Załóż konto." },
+        { status: 404 }
+      );
+    }
+
+    if (!user.is_active) {
+      return NextResponse.json(
+        { error: "Konto nie zostało aktywowane. Sprawdź e-mail." },
+        { status: 403 }
+      );
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return NextResponse.json({ error: "Błędne hasło." }, { status: 401 });
+    }
+
+    // TODO: tutaj dodamy sesję (JWT/cookies)
+    return NextResponse.json({ ok: true, message: "Zalogowano pomyślnie." });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("❌ Login error:", err);
+    return NextResponse.json({ error: "Błąd logowania." }, { status: 500 });
   }
 }
