@@ -14,7 +14,7 @@ export async function POST(req) {
       );
     }
 
-    // Pobierz użytkownika po emailu
+    // Pobierz użytkownika
     const { data: user, error } = await supabase
       .from("users")
       .select("*")
@@ -44,10 +44,10 @@ export async function POST(req) {
       );
     }
 
-    // Tworzymy JWT (ważne 72h)
+    // JWT z rolą
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET, // 🔑 dodaj w Vercel ENV
+      process.env.JWT_SECRET,
       { expiresIn: "72h" }
     );
 

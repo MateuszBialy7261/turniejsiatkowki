@@ -5,15 +5,48 @@ export default function Home() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetch("/api/me")
+    fetch("/api/me", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (data.loggedIn) setUser(data);
-      });
+      })
+      .catch(() => setUser(null));
   }, []);
+
+  // Funkcja pomocnicza do roli
+  const roleDisplay = (role) => {
+    switch (role) {
+      case "sedzia":
+        return { label: "sędzia", color: "text-green-600", icon: "⚖️" };
+      case "organizator":
+        return { label: "organizator", color: "text-blue-600", icon: "🏢" };
+      case "admin":
+        return { label: "administrator", color: "text-red-600", icon: "👑" };
+      default:
+        return { label: role, color: "text-gray-600", icon: "👤" };
+    }
+  };
 
   return (
     <main className="flex-grow w-full p-8 space-y-8 text-gray-800">
+
+      {/* Powitalny kafelek */}
+      {user && (
+        <div className="bg-gradient-to-r from-blue-200 to-blue-100 rounded-2xl shadow-md p-6 text-center">
+          <h2 className="text-2xl font-bold text-gray-800">
+            👋 Cześć {user.firstName}!
+          </h2>
+          <p className="text-gray-700 mt-2 text-lg flex items-center justify-center gap-2">
+            Zalogowano jako{" "}
+            <span
+              className={`font-semibold ${roleDisplay(user.role).color}`}
+            >
+              {roleDisplay(user.role).icon} {roleDisplay(user.role).label}
+            </span>
+            . Baw się dobrze na turnieju! 🎉
+          </p>
+        </div>
+      )}
 
       {/* Kafelek 1 */}
       <div>

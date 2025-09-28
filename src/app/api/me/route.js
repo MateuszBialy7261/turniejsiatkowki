@@ -12,12 +12,16 @@ export async function GET(req) {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Pobieramy imię i rolę z tabeli "users"
+    // Pobierz dane użytkownika z bazy
     const { data: user } = await supabase
       .from("users")
       .select("first_name, role")
       .eq("id", decoded.id)
       .single();
+
+    if (!user) {
+      return NextResponse.json({ loggedIn: false });
+    }
 
     return NextResponse.json({
       loggedIn: true,
