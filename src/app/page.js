@@ -1,4 +1,17 @@
+"use client";
+import { useEffect, useState } from "react";
+
 export default function Home() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.loggedIn) setUser(data);
+      });
+  }, []);
+
   return (
     <main className="flex-grow w-full p-8 space-y-8 text-gray-800">
 
@@ -42,12 +55,21 @@ export default function Home() {
 
       {/* Kafelek 3 */}
       <div>
-        <a
-          href="/login"
-          className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
-        >
-          🔐 Logowanie organizatora / sędziego
-        </a>
+        {user ? (
+          <a
+            href="/dashboard"
+            className="block bg-green-100 rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-green-200 hover:scale-[1.02] transition-transform duration-300"
+          >
+            🚀 Panel {user.role}
+          </a>
+        ) : (
+          <a
+            href="/login"
+            className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          >
+            🔐 Logowanie organizatora / sędziego
+          </a>
+        )}
       </div>
     </main>
   );
