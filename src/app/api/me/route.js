@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(req) {
   const token = req.cookies.get("session")?.value;
+  console.log("🍪 session token:", token); // debug
 
   if (!token) {
     return NextResponse.json({ loggedIn: false });
@@ -11,15 +12,17 @@ export async function GET(req) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("✅ decoded JWT:", decoded); // debug
 
     // Pobierz dane użytkownika z bazy
-    const { data: user } = await supabase
+    const { data: user, error } = await supabase
       .from("users")
       .select("first_name, role")
       .eq("id", decoded.id)
       .single();
 
-    if (!user) {
+    if (error || !user) {
+      console.error("❌ User not found:", error);
       return NextResponse.json({ loggedIn: false });
     }
 
