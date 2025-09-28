@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import { getSiteUrl } from "@/lib/getSiteUrl";
 
 export async function POST(req) {
-  const { supabase } = await import("@/lib/supabaseClient");
-
   try {
+    const supabase = getSupabaseClient();
     const body = await req.json();
     const { firstName, lastName, email, password, role } = body;
 
@@ -50,7 +50,7 @@ export async function POST(req) {
     // Mailer
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
+      port: Number(process.env.SMTP_PORT),
       secure: process.env.SMTP_SECURE === "true",
       auth: {
         user: process.env.SMTP_USER,

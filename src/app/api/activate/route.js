@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 export async function GET(req) {
-  // import supabase tylko w runtime
-  const { supabase } = await import("@/lib/supabaseClient");
-
+  const supabase = getSupabaseClient();
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
 
