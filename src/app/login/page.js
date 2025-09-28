@@ -19,10 +19,10 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
+        credentials: "include", // 👈 ważne
       });
 
       console.log("📡 Odpowiedź HTTP:", res.status);
-
       const data = await res.json();
       console.log("🔎 API /api/login response:", data);
 
@@ -97,6 +97,7 @@ export default function LoginPage() {
             name="password"
             value={formData.password}
             onChange={handleChange}
+            autoComplete="current-password" // 👈 poprawka z konsoli
             className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
           />

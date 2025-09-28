@@ -13,6 +13,7 @@ export default function Home() {
       .catch(() => setUser(null));
   }, []);
 
+  // Funkcja pomocnicza do roli
   const roleDisplay = (role) => {
     switch (role) {
       case "sedzia":
@@ -37,9 +38,7 @@ export default function Home() {
           </h2>
           <p className="text-gray-700 mt-2 text-lg flex items-center justify-center gap-2">
             Zalogowano jako{" "}
-            <span
-              className={`font-semibold ${roleDisplay(user.role).color}`}
-            >
+            <span className={`font-semibold ${roleDisplay(user.role).color}`}>
               {roleDisplay(user.role).icon} {roleDisplay(user.role).label}
             </span>
             . Baw się dobrze na turnieju! 🎉
@@ -85,14 +84,15 @@ export default function Home() {
         </a>
       </div>
 
-      {/* Kafelek 3 */}
+      {/* Kafelek 3 → logowanie/panel */}
       <div>
         {user ? (
           <a
-            href={`/dashboard/${user.role}`}
+            href={`/dashboard/${user.role}`} // 👈 teraz zawsze idzie do panelu
             className="block bg-green-100 rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-green-200 hover:scale-[1.02] transition-transform duration-300"
           >
-            🚀 {user.role === "sedzia"
+            🚀{" "}
+            {user.role === "sedzia"
               ? "Panel sędziego"
               : user.role === "organizator"
               ? "Panel organizatora"
