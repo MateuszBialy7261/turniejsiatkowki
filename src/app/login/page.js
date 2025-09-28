@@ -13,14 +13,18 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log("📡 Wysyłam do /api/login:", formData);
+
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
+      console.log("📡 Odpowiedź HTTP:", res.status);
+
       const data = await res.json();
-      console.log("🔎 API /api/login response:", data); // 👈 tu sprawdzimy, co wraca
+      console.log("🔎 API /api/login response:", data);
 
       if (res.ok) {
         setMessage({
@@ -28,7 +32,6 @@ export default function LoginPage() {
           text: "✅ Zalogowano pomyślnie! Przekierowanie...",
         });
 
-        // testowo wstawiamy opóźnienie
         setTimeout(() => {
           window.location.href = `/dashboard/${data.role}`;
         }, 2000);
@@ -105,6 +108,13 @@ export default function LoginPage() {
         >
           Zaloguj się
         </button>
+
+        <p className="text-sm text-center mt-4">
+          Nie masz jeszcze konta?{" "}
+          <a href="/register" className="text-blue-500 hover:underline">
+            Zarejestruj się tutaj
+          </a>
+        </p>
       </form>
     </div>
   );
