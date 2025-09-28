@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import AuthLayout from "@/components/AuthLayout";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -19,10 +18,19 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+
       const data = await res.json();
 
       if (res.ok) {
-        setMessage({ type: "success", text: data.message });
+        setMessage({
+          type: "success",
+          text: "✅ Zalogowano pomyślnie! Przekierowanie...",
+        });
+
+        // 🚀 Po 2 sekundach przekierowanie do dashboardu
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 2000);
       } else {
         setMessage({ type: "error", text: "❌ " + data.error });
       }
@@ -32,15 +40,18 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    if (message) {
+    if (message && message.type !== "success") {
       const timer = setTimeout(() => setMessage(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [message]);
 
   return (
-    <AuthLayout>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen bg-[#f5f5f5] flex justify-center items-start pt-20 px-4 sm:px-6 lg:px-8">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow-lg rounded-xl p-6 sm:p-8 max-w-md w-full space-y-4"
+      >
         <h2 className="text-2xl font-bold mb-4 text-center">Logowanie</h2>
 
         {message && (
@@ -63,7 +74,7 @@ export default function LoginPage() {
         )}
 
         <label className="block">
-          <span className="text-gray-700">E-mail</span>
+          <span className="text-gray-700">Adres e-mail</span>
           <input
             type="email"
             name="email"
@@ -94,12 +105,12 @@ export default function LoginPage() {
         </button>
 
         <p className="text-sm text-center mt-4">
-          Nie masz konta?{" "}
+          Nie masz jeszcze konta?{" "}
           <a href="/register" className="text-blue-500 hover:underline">
             Zarejestruj się tutaj
           </a>
         </p>
       </form>
-    </AuthLayout>
+    </div>
   );
 }
