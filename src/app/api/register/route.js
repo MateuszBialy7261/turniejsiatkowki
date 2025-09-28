@@ -10,7 +10,10 @@ export async function POST(req) {
     const { firstName, lastName, email, password, role } = body;
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email i hasło są wymagane." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email i hasło są wymagane." },
+        { status: 400 }
+      );
     }
 
     // Hash hasła
@@ -42,6 +45,25 @@ export async function POST(req) {
       return NextResponse.json({ error: insertError.message }, { status: 400 });
     }
 
+    // 🔑 Token aktywacyjny
+    const token = crypto.randomBytes(32).toString("hex");
+    const { error: tokenError } = await supabase
+      .from("activation_tokens")
+      .insert([{ user_id: user.id, token }]);
+
+    if (tokenError) {
+      console.error("❌ Token insert error:", tokenError);
+      return NextResponse.json(
+        { error: "Błąd przy tworzeniu tokenu aktywacyjnego" },
+        { status: 500 }
+      );
+    }
+
+    // 🌍 URL aktywacyjny
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      "https://turniejsiatkowki.vercel.app";
+    const verifyUrl = `${siteUrl}/api/activate?token=${token}`;
 
     // Konfiguracja mailera
     const transporter = nodemailer.createTransport({
