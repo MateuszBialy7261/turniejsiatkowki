@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(req) {
-  const supabase = getSupabaseClient();
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
 
@@ -10,7 +9,6 @@ export async function GET(req) {
     return NextResponse.json({ error: "Brak tokena" }, { status: 400 });
   }
 
-  // Szukamy tokena
   const { data: tokenData, error } = await supabase
     .from("activation_tokens")
     .select("*")
@@ -23,16 +21,9 @@ export async function GET(req) {
     );
   }
 
-  // Aktywujemy konto
-  await supabase
-    .from("users")
-    .update({ is_active: true })
-    .eq("id", tokenData.user_id);
-
-  // Usuwamy token
+  await supabase.from("users").update({ is_active: true }).eq("id", tokenData.user_id);
   await supabase.from("activation_tokens").delete().eq("id", tokenData.id);
 
-  // Przekierowanie na stronę wynikową
   return NextResponse.redirect(
     `${process.env.NEXT_PUBLIC_SITE_URL}/activated?status=success`
   );

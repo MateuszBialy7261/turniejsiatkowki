@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(req) {
@@ -6,7 +7,7 @@ export async function GET(req) {
     const token = searchParams.get("token");
 
     if (!token) {
-      return Response.redirect("/verify/fail");
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/fail`);
     }
 
     const { data, error } = await supabase
@@ -17,18 +18,17 @@ export async function GET(req) {
 
     if (error) {
       console.error("❌ Supabase error:", error);
-      return Response.redirect("/verify/fail");
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/fail`);
     }
 
     if (!data || data.length === 0) {
-      return Response.redirect("/verify/fail");
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/fail`);
     }
 
     // Sukces → przenosimy na stronę z komunikatem
-    return Response.redirect("/verify/success");
-
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/success`);
   } catch (err) {
     console.error("❌ Verify error:", err);
-    return Response.redirect("/verify/fail");
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/fail`);
   }
 }

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getSupabaseClient } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export async function POST(req) {
-  const supabase = getSupabaseClient();
-
   try {
     const { email, password } = await req.json();
 
@@ -40,7 +38,6 @@ export async function POST(req) {
       return NextResponse.json({ error: "Błędne hasło." }, { status: 401 });
     }
 
-    // TODO: dodamy sesję (JWT/cookies)
     return NextResponse.json({ ok: true, message: "Zalogowano pomyślnie." });
   } catch (err) {
     console.error("❌ Login error:", err);
