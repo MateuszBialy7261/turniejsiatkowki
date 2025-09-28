@@ -13,7 +13,6 @@ export default function Home() {
       .catch(() => setUser(null));
   }, []);
 
-  // Funkcja pomocnicza do roli
   const roleDisplay = (role) => {
     switch (role) {
       case "sedzia":

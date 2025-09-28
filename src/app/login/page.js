@@ -27,9 +27,9 @@ export default function LoginPage() {
           text: "✅ Zalogowano pomyślnie! Przekierowanie...",
         });
 
-        // 🚀 Po 2 sekundach przekierowanie do dashboardu
+        // 🚀 Po 2 sekundach przekierowanie do właściwego dashboardu
         setTimeout(() => {
-          window.location.href = "/dashboard";
+          window.location.href = `/dashboard/${data.role}`;
         }, 2000);
       } else {
         setMessage({ type: "error", text: "❌ " + data.error });
