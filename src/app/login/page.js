@@ -20,6 +20,7 @@ export default function LoginPage() {
       });
 
       const data = await res.json();
+      console.log("🔎 API /api/login response:", data); // 👈 tu sprawdzimy, co wraca
 
       if (res.ok) {
         setMessage({
@@ -27,14 +28,15 @@ export default function LoginPage() {
           text: "✅ Zalogowano pomyślnie! Przekierowanie...",
         });
 
-        // 🚀 Po 2 sekundach przekierowanie do właściwego dashboardu
+        // testowo wstawiamy opóźnienie
         setTimeout(() => {
           window.location.href = `/dashboard/${data.role}`;
         }, 2000);
       } else {
         setMessage({ type: "error", text: "❌ " + data.error });
       }
-    } catch {
+    } catch (err) {
+      console.error("❌ Fetch error:", err);
       setMessage({ type: "error", text: "❌ Błąd połączenia." });
     }
   };
@@ -103,13 +105,6 @@ export default function LoginPage() {
         >
           Zaloguj się
         </button>
-
-        <p className="text-sm text-center mt-4">
-          Nie masz jeszcze konta?{" "}
-          <a href="/register" className="text-blue-500 hover:underline">
-            Zarejestruj się tutaj
-          </a>
-        </p>
       </form>
     </div>
   );
