@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { supabase } from "@/lib/supabaseClient";
-import { getSiteUrl } from "@/lib/getSiteUrl";
 
 export async function POST(req) {
   try {
@@ -11,10 +10,7 @@ export async function POST(req) {
     const { firstName, lastName, email, password, role } = body;
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email i hasło są wymagane." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email i hasło są wymagane." }, { status: 400 });
     }
 
     // Hash hasła
@@ -38,15 +34,13 @@ export async function POST(req) {
 
     if (insertError) throw insertError;
 
-    // Token weryfikacyjny
+    // Token aktywacyjny
     const token = crypto.randomBytes(32).toString("hex");
     await supabase.from("activation_tokens").insert([{ user_id: user.id, token }]);
 
-    // Link aktywacyjny
-    const siteUrl = getSiteUrl();
-    const verifyUrl = `${siteUrl}/api/activate?token=${token}`;
+    const verifyUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/activate?token=${token}`;
 
-    // Mailer
+    // Konfiguracja mailera
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -61,7 +55,7 @@ export async function POST(req) {
       from: process.env.SMTP_FROM,
       to: email,
       subject: "Aktywacja konta - Turniej Siatkówki",
-      text: `Witaj ${firstName}!\n\nDziękujemy za rejestrację.\nAby aktywować konto, kliknij w poniższy link:\n${verifyUrl}\n\nJeśli to nie Ty zakładałeś(aś) konto, zignoruj tę wiadomość.`,
+      text: `Witaj ${firstName}!\n\nDziękujemy za rejestrację.\nAby aktywować konto, kliknij w link:\n${verifyUrl}\n\nJeśli to nie Ty zakładałeś(aś) konto, zignoruj tę wiadomość.`,
       html: `
         <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
           <h2 style="color: #2563eb;">Witaj ${firstName}!</h2>
@@ -83,8 +77,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       ok: true,
-      message:
-        "Użytkownik zarejestrowany. Sprawdź e-mail w celu aktywacji.",
+      message: "Użytkownik zarejestrowany. Sprawdź e-mail w celu aktywacji.",
     });
   } catch (err) {
     console.error("❌ Register error:", err);

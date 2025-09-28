@@ -7,10 +7,7 @@ export async function POST(req) {
     const { email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email i hasło są wymagane." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email i hasło są wymagane." }, { status: 400 });
     }
 
     const { data: user, error } = await supabase
@@ -20,17 +17,11 @@ export async function POST(req) {
       .single();
 
     if (error || !user) {
-      return NextResponse.json(
-        { error: "Nie znaleziono użytkownika. Załóż konto." },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Nie znaleziono użytkownika. Załóż konto." }, { status: 404 });
     }
 
     if (!user.is_active) {
-      return NextResponse.json(
-        { error: "Konto nie zostało aktywowane. Sprawdź e-mail." },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Konto nie zostało aktywowane. Sprawdź e-mail." }, { status: 403 });
     }
 
     const valid = await bcrypt.compare(password, user.password);

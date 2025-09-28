@@ -6,9 +6,10 @@ export async function GET(req) {
   const token = searchParams.get("token");
 
   if (!token) {
-    return NextResponse.json({ error: "Brak tokena" }, { status: 400 });
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/activated?status=error`);
   }
 
+  // Sprawdź token
   const { data: tokenData, error } = await supabase
     .from("activation_tokens")
     .select("*")
@@ -16,15 +17,14 @@ export async function GET(req) {
     .single();
 
   if (error || !tokenData) {
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/activated?status=error`
-    );
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/activated?status=error`);
   }
 
+  // Aktywacja konta
   await supabase.from("users").update({ is_active: true }).eq("id", tokenData.user_id);
+
+  // Usuń token
   await supabase.from("activation_tokens").delete().eq("id", tokenData.id);
 
-  return NextResponse.redirect(
-    `${process.env.NEXT_PUBLIC_SITE_URL}/activated?status=success`
-  );
+  return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/activated?status=success`);
 }

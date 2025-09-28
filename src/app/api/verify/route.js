@@ -16,16 +16,10 @@ export async function GET(req) {
       .eq("verification_token", token)
       .select("id");
 
-    if (error) {
-      console.error("❌ Supabase error:", error);
+    if (error || !data || data.length === 0) {
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/fail`);
     }
 
-    if (!data || data.length === 0) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/fail`);
-    }
-
-    // Sukces → przenosimy na stronę z komunikatem
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_SITE_URL}/verify/success`);
   } catch (err) {
     console.error("❌ Verify error:", err);
