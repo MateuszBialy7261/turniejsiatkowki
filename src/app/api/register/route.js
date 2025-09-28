@@ -32,13 +32,16 @@ export async function POST(req) {
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      if (insertError.code === "23505") {
+        return NextResponse.json(
+          { error: "Konto o podanym adresie e-mail już istnieje." },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ error: insertError.message }, { status: 400 });
+    }
 
-    // Token aktywacyjny
-    const token = crypto.randomBytes(32).toString("hex");
-    await supabase.from("activation_tokens").insert([{ user_id: user.id, token }]);
-
-    const verifyUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/activate?token=${token}`;
 
     // Konfiguracja mailera
     const transporter = nodemailer.createTransport({
