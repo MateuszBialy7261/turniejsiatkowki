@@ -57,10 +57,14 @@ export default function Home() {
       <div>
         {user ? (
           <a
-            href="/dashboard"
+            href={`/dashboard/${user.role}`}
             className="block bg-green-100 rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-green-200 hover:scale-[1.02] transition-transform duration-300"
           >
-            🚀 Panel {user.role}
+            🚀 {user.role === "sedzia"
+              ? "Panel sędziego"
+              : user.role === "organizator"
+              ? "Panel organizatora"
+              : "Panel administratora"}
           </a>
         ) : (
           <a
