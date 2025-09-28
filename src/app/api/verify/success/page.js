@@ -1,6 +1,6 @@
 export default function VerifySuccessPage() {
   return (
-    <div className="min-h-screen bg-[#f5f5f5] flex justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#f5f5f5] flex justify-center items-start pt-20 px-4 sm:px-6 lg:px-8">
       <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8 max-w-md w-full text-center">
         <h1 className="text-2xl font-bold text-green-600 mb-4">
           ✅ Konto zostało aktywowane!
