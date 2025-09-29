@@ -58,7 +58,7 @@ export default function DashboardPage() {
           <span className="text-gray-600">{dateTime}</span>
           <button
             onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition cursor-pointer"
           >
             Wyloguj się
           </button>
