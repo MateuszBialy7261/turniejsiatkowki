@@ -1,30 +1,45 @@
 "use client";
-import { useEffect, useState } from "react";
-import WelcomeBar from "@/components/WelcomeBar";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function SedziaDashboard() {
-  const [user, setUser] = useState(null);
+export default function DashboardRedirect() {
+  const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/me", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.loggedIn && data?.role === "sedzia") setUser(data);
-      })
-      .catch(() => setUser(null));
-  }, []);
+    async function redirectUser() {
+      try {
+        const res = await fetch("/api/me", { credentials: "include" });
+        const data = await res.json();
+
+        if (!data?.loggedIn) {
+          router.push("/login");
+          return;
+        }
+
+        switch (data.role) {
+          case "admin":
+            router.push("/dashboard/admin");
+            break;
+          case "organizator":
+            router.push("/dashboard/organizator");
+            break;
+          case "sedzia":
+            router.push("/dashboard/sedzia");
+            break;
+          default:
+            router.push("/login");
+        }
+      } catch {
+        router.push("/login");
+      }
+    }
+
+    redirectUser();
+  }, [router]);
 
   return (
-    <main className="min-h-screen bg-[#f5f5f5] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {user && <WelcomeBar firstName={user.firstName} />}
-
-      {/* reszta panelu sędziego (Twoje kafelki/sekcje) */}
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-bold mb-2">Panel sędziego</h2>
-        <p className="text-gray-600">
-          Tu wkrótce Twoje funkcje sędziowskie (przydziały meczów, terminarze, rozliczenia itd.).
-        </p>
-      </div>
-    </main>
+    <div className="flex justify-center items-center h-screen text-gray-600">
+      Przekierowywanie do panelu...
+    </div>
   );
 }

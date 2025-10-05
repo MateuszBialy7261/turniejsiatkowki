@@ -1,131 +1,215 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 
-export default function AddUserPage() {
+import { useEffect, useState } from "react";
+
+export default function AdminAddUserPage() {
+  const [meChecked, setMeChecked] = useState(false);
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
     email: "",
     role: "",
     phone: "",
+    address: "",
     club_name: "",
     nip: "",
-    address: "",
     age: "",
     license: false,
   });
-  const [message, setMessage] = useState(null);
-  const router = useRouter();
+  const [msg, setMsg] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // guard
+  useEffect(() => {
+    (async () => {
+      try {
+        const m = await (await fetch("/api/me", { credentials: "include" })).json();
+        if (!m.loggedIn || m.role !== "admin") {
+          window.location.href = "/";
+          return;
+        }
+        setMeChecked(true);
+      } catch {
+        window.location.href = "/";
+      }
+    })();
+  }, []);
+
+  if (!meChecked) return null;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+    setForm((s) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
   };
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
+    setMsg(null);
+
     try {
       const res = await fetch("/api/admin/users/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Błąd dodawania użytkownika.");
 
-      setMessage({ type: "success", text: "✅ Użytkownik został dodany i otrzymał e-mail aktywacyjny." });
-      setTimeout(() => router.push("/dashboard/admin/users"), 2500);
-    } catch (err) {
-      setMessage({ type: "error", text: "❌ " + err.message });
+      if (!res.ok) throw new Error(data?.error || "Błąd dodawania użytkownika");
+
+      setMsg({ type: "success", text: "✅ Użytkownik dodany. Wysłano e-mail z hasłem i linkiem aktywacyjnym." });
+      setForm({
+        first_name: "",
+        last_name: "",
+        email: "",
+        role: "",
+        phone: "",
+        address: "",
+        club_name: "",
+        nip: "",
+        age: "",
+        license: false,
+      });
+    } catch (e) {
+      setMsg({ type: "error", text: "❌ " + e.message });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <main className="p-8 max-w-3xl mx-auto bg-white shadow-md rounded-xl">
-      <h1 className="text-3xl font-bold mb-6">➕ Dodaj nowego użytkownika</h1>
+    <main className="max-w-3xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">➕ Dodaj użytkownika</h1>
 
-      {message && (
+      {msg && (
         <div
-          className={`p-3 mb-4 rounded shadow ${
-            message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          }`}
+          className={`mb-4 p-3 rounded ${msg.type === "success" ? "bg-[#d4edf8] text-black" : "bg-red-100 text-red-800"}`}
         >
-          {message.text}
+          {msg.text}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={submit} className="bg-white shadow-md rounded-xl p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label>
-            <span className="block text-gray-700">Imię</span>
+          <label className="block">
+            <span className="text-gray-700">Imię</span>
             <input
-              type="text"
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
               name="first_name"
               value={form.first_name}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded"
             />
           </label>
-          <label>
-            <span className="block text-gray-700">Nazwisko</span>
+
+          <label className="block">
+            <span className="text-gray-700">Nazwisko</span>
             <input
-              type="text"
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
               name="last_name"
               value={form.last_name}
               onChange={handleChange}
               required
-              className="w-full border p-2 rounded"
             />
+          </label>
+
+          <label className="block sm:col-span-2">
+            <span className="text-gray-700">E-mail</span>
+            <input
+              type="email"
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-700">Rola</span>
+            <select
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Wybierz rolę</option>
+              <option value="sedzia">Sędzia</option>
+              <option value="organizator">Organizator</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="text-gray-700">Telefon</span>
+            <input
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+            />
+          </label>
+
+          <label className="block sm:col-span-2">
+            <span className="text-gray-700">Adres</span>
+            <input
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              name="address"
+              value={form.address}
+              onChange={handleChange}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-700">Nazwa klubu</span>
+            <input
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              name="club_name"
+              value={form.club_name}
+              onChange={handleChange}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-700">NIP</span>
+            <input
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              name="nip"
+              value={form.nip}
+              onChange={handleChange}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-700">Wiek</span>
+            <input
+              type="number"
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              name="age"
+              value={form.age}
+              onChange={handleChange}
+            />
+          </label>
+
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="license"
+              checked={form.license}
+              onChange={handleChange}
+              className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer"
+            />
+            <span className="text-gray-700">Licencja sędziego</span>
           </label>
         </div>
 
-        <label>
-          <span className="block text-gray-700">Adres e-mail</span>
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="w-full border p-2 rounded"
-          />
-        </label>
-
-        <label>
-          <span className="block text-gray-700">Rola</span>
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            required
-            className="w-full border p-2 rounded"
-          >
-            <option value="">Wybierz rolę</option>
-            <option value="sedzia">Sędzia</option>
-            <option value="organizator">Organizator</option>
-            <option value="admin">Administrator</option>
-          </select>
-        </label>
-
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            name="license"
-            checked={form.license}
-            onChange={handleChange}
-            className="h-5 w-5 border-gray-300 rounded"
-          />
-          <span>Czy posiada licencję?</span>
-        </label>
-
         <button
           type="submit"
-          className="bg-blue-400 text-white py-2 px-6 rounded hover:bg-blue-500 transition"
+          disabled={submitting}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-semibold disabled:opacity-60"
         >
-          Utwórz użytkownika
+          {submitting ? "Dodawanie..." : "Dodaj użytkownika"}
         </button>
       </form>
     </main>
