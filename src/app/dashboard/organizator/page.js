@@ -49,7 +49,7 @@ export default function OrganizerDashboard() {
 
         {/* ✅ Utwórz turniej */}
         <Link
-          href="/dashboard/organizer/tournaments/new"
+          href="/dashboard/organizator/tournaments/new"
           className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center hover:-translate-y-1"
         >
           <span className="text-2xl">🏆</span>
@@ -60,7 +60,7 @@ export default function OrganizerDashboard() {
 
         {/* Moje turnieje */}
         <Link
-          href="/dashboard/organizer/tournaments"
+          href="/dashboard/organizator/tournaments"
           className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
         >
           <span className="text-2xl">📋</span>
