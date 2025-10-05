@@ -1,28 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
 import WelcomeBar from "@/components/WelcomeBar";
 
 export default function OrganizatorDashboard() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    fetch("/api/me", { credentials: "include" })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.loggedIn && data?.role === "organizator") setUser(data);
-      })
-      .catch(() => setUser(null));
-  }, []);
+  const user = { firstName: "Julia", role: "organizator" };
 
   return (
-    <main className="min-h-screen bg-[#f5f5f5] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {user && <WelcomeBar firstName={user.firstName} />}
+    <main className="p-6 max-w-6xl mx-auto">
+      <WelcomeBar firstName={user.firstName} role={user.role} />
 
-      {/* reszta panelu organizatora (Twoje kafelki/sekcje) */}
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <h2 className="text-xl font-bold mb-2">Panel organizatora</h2>
+      <h1 className="text-3xl font-bold mb-6">📋 Panel organizatora</h1>
+
+      <div className="bg-white p-6 rounded-2xl shadow-md">
         <p className="text-gray-600">
-          Tu wkrótce funkcje dla organizatora (tworzenie turniejów, zgłoszenia, płatności itd.).
+          Tu wkrótce pojawią się Twoje funkcje organizacyjne (tworzenie turniejów,
+          zarządzanie sędziami, halami, wynikami itd.).
         </p>
       </div>
     </main>

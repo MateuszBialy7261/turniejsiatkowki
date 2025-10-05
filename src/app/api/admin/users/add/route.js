@@ -97,7 +97,7 @@ export async function POST(req) {
             Klikając w link aktywacyjny wyrażasz zgodę na przetwarzanie danych osobowych przez
             <b>Smart Web Solutions Mateusz Biały</b> w celach utworzenia konta i realizacji zadań turniejowych.
             W razie wątpliwości prosimy o kontakt: 
-            <a href="mailto:turniej@smartwebsolutions.pl">turniej@smartwebsolutions.pl</a>.
+            <a href="mailto:sedzia@mateuszbialy.pl.pl">sedzia@mateuszbialy.pl</a>.
           </p>
         </div>
       `,

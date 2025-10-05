@@ -1,69 +1,46 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import WelcomeBar from "@/components/WelcomeBar";
 import Link from "next/link";
 
-export default function AdminDashboardPage() {
-  const [me, setMe] = useState(null);
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/me", { credentials: "include" });
-        const data = await res.json();
-        if (!data.loggedIn || data.role !== "admin") {
-          window.location.href = "/"; // guard
-          return;
-        }
-        setMe(data);
-      } catch (_) {
-        window.location.href = "/";
-      } finally {
-        setChecked(true);
-      }
-    })();
-  }, []);
-
-  if (!checked) return null;
+export default function AdminDashboard() {
+  const user = { firstName: "Mateusz", role: "admin" };
 
   return (
-    <main className="flex-grow w-full p-8 space-y-8 text-gray-800">
-      <div className="bg-white rounded-2xl shadow-md p-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
-          👑 Panel administratora
-        </h1>
-        <div className="text-sm text-gray-600">
-          {me?.firstName ? `Zalogowano jako: ${me.firstName}` : ""}
-        </div>
-      </div>
+    <main className="p-6 max-w-6xl mx-auto">
+      <WelcomeBar firstName={user.firstName} role={user.role} />
 
-      {/* Kafelki */}
+      <h1 className="text-3xl font-bold mb-6">👑 Panel administratora</h1>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link
           href="/dashboard/admin/users"
-          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
         >
-          👥 Zarządzaj użytkownikami
+          <span className="text-2xl">👥</span>
+          <p className="font-semibold text-lg mt-2">Zarządzaj użytkownikami</p>
         </Link>
 
         <Link
-          href="/dashboard/admin/users/add"
-          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          href="/dashboard/admin/add-user"
+          className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
         >
-          ➕ Dodaj użytkownika
+          <span className="text-2xl">➕</span>
+          <p className="font-semibold text-lg mt-2">Dodaj użytkownika</p>
         </Link>
 
-        <div className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold opacity-70">
-          🏆 Utwórz turniej (wkrótce)
+        <div className="bg-white p-6 rounded-2xl shadow-md text-center opacity-60">
+          <span className="text-2xl">🏆</span>
+          <p className="font-semibold text-lg mt-2">Utwórz turniej (wkrótce)</p>
         </div>
 
-        <div className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold opacity-70">
-          🏟️ Hale / lokalizacje (wkrótce)
+        <div className="bg-white p-6 rounded-2xl shadow-md text-center opacity-60">
+          <span className="text-2xl">🏟️</span>
+          <p className="font-semibold text-lg mt-2">Hale / lokalizacje (wkrótce)</p>
         </div>
 
-        <div className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold opacity-70">
-          ⚙️ Ustawienia (wkrótce)
+        <div className="bg-white p-6 rounded-2xl shadow-md text-center opacity-60">
+          <span className="text-2xl">⚙️</span>
+          <p className="font-semibold text-lg mt-2">Ustawienia (wkrótce)</p>
         </div>
       </div>
     </main>
