@@ -1,24 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
 
-export default function UserSettingsPage() {
-  const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
-    phone: "",
-    address: "",
-    club_name: "",
-    nip: "",
-    license: false,
-  });
-  const [role, setRole] = useState("");
-  const [msg, setMsg] = useState(null);
+import { useState, useEffect, useRef } from "react";
+import WelcomeBar from "@/components/WelcomeBar";
+
+export default function SettingsPage() {
+  const [user, setUser] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(true);
+  const topRef = useRef(null);
 
-  // Pobierz dane zalogowanego użytkownika
+  // 🧠 Pobranie danych użytkownika
   useEffect(() => {
-    (async () => {
+    async function loadUser() {
       try {
         const res = await fetch("/api/me", { credentials: "include" });
         const data = await res.json();
@@ -27,194 +21,255 @@ export default function UserSettingsPage() {
           return;
         }
 
-        setRole(data.role);
-
-        const userRes = await fetch(`/api/user`, { cache: "no-store" });
-        const userData = await userRes.json();
-        if (userRes.ok) setForm(userData);
+        // pobranie pełnych danych użytkownika z bazy
+        const res2 = await fetch(`/api/admin/users/${data.id}`, {
+          cache: "no-store",
+        });
+        const userData = await res2.json();
+        setUser(userData);
+        setFormData(userData);
       } catch (err) {
-        console.error("❌ Błąd pobierania danych:", err);
+        console.error("❌ loadUser error:", err);
       } finally {
         setLoading(false);
       }
-    })();
+    }
+    loadUser();
   }, []);
 
-  // Obsługa zmian w formularzu
+  // 🧩 Obsługa zmian pól
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((s) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
-  // Zapis zmian
+  // 🧩 Formatowanie numeru telefonu
+  const handlePhoneChange = (e) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 3 && value.length <= 6)
+      value = value.slice(0, 3) + "-" + value.slice(3);
+    else if (value.length > 6)
+      value =
+        value.slice(0, 3) +
+        "-" +
+        value.slice(3, 6) +
+        "-" +
+        value.slice(6, 9);
+    setFormData({ ...formData, phone: value });
+  };
+
+  // 🧩 Zapis danych
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMsg(null);
+    setMessage(null);
 
     try {
-      const res = await fetch("/api/user", {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(formData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setMsg({ type: "success", text: "✅ Dane zostały zapisane pomyślnie" });
+      if (!res.ok) throw new Error(data.error || "Błąd aktualizacji danych.");
+      setMessage({
+        type: "success",
+        text: "✅ Dane zostały zapisane pomyślnie.",
+      });
     } catch (err) {
-      setMsg({ type: "error", text: "❌ " + err.message });
+      setMessage({ type: "error", text: "❌ " + err.message });
     }
   };
 
-  if (loading)
-    return (
-      <p className="text-center text-gray-500 mt-10">⏳ Ładowanie danych...</p>
-    );
+  // 🧩 Zmiana hasła
+  const handleChangePassword = async () => {
+    const oldPass = prompt("Podaj obecne hasło:");
+    const newPass = prompt("Podaj nowe hasło:");
+    if (!oldPass || !newPass) return;
 
-  // 🔁 Adres powrotu w zależności od roli
-  const backToDashboard =
-    role === "admin"
-      ? "/dashboard/admin"
-      : role === "organizator"
-      ? "/dashboard/organizator"
-      : "/dashboard/sedzia";
+    try {
+      const res = await fetch("/api/user/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPass, newPass }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      alert("✅ Hasło zmienione pomyślnie!");
+    } catch (err) {
+      alert("❌ Błąd zmiany hasła: " + err.message);
+    }
+  };
+
+  // 🧩 Usunięcie konta
+  const handleDeleteAccount = async () => {
+    if (!confirm("Czy na pewno chcesz usunąć swoje konto?")) return;
+
+    try {
+      const res = await fetch("/api/user", { method: "DELETE" });
+      if (!res.ok) throw new Error("Nie udało się usunąć konta.");
+      alert("✅ Konto zostało usunięte.");
+      window.location.href = "/";
+    } catch (err) {
+      alert("❌ " + err.message);
+    }
+  };
+
+  if (loading) return <p className="text-center mt-10 text-gray-500">Ładowanie...</p>;
 
   return (
     <main className="max-w-3xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">⚙️ Moje konto</h1>
+      <div ref={topRef}></div>
+      <WelcomeBar firstName={user?.first_name} role={user?.role} />
 
-      {msg && (
+      <h1 className="text-3xl font-bold mb-6 text-center">⚙️ Moje konto</h1>
+
+      {message && (
         <div
-          className={`mb-4 p-3 rounded ${
-            msg.type === "success"
-              ? "bg-[#d4edf8]"
+          className={`mb-6 p-3 rounded relative shadow-md text-center ${
+            message.type === "success"
+              ? "bg-[#d4edf8] text-black"
               : "bg-red-100 text-red-800"
           }`}
         >
-          {msg.text}
+          <span className="block font-medium">{message.text}</span>
+          <button
+            onClick={() => setMessage(null)}
+            type="button"
+            className="absolute top-2 right-3 text-lg font-bold hover:opacity-70"
+          >
+            ×
+          </button>
         </div>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-xl p-6 space-y-4"
-      >
+      {/* Formularz */}
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow-md">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label>
+          <label className="block">
             <span className="text-gray-700">Imię</span>
             <input
+              type="text"
               name="first_name"
-              value={form.first_name || ""}
+              value={formData.first_name || ""}
               onChange={handleChange}
-              required
               className="mt-1 block w-full border rounded-md shadow-sm p-2"
             />
           </label>
 
-          <label>
+          <label className="block">
             <span className="text-gray-700">Nazwisko</span>
             <input
+              type="text"
               name="last_name"
-              value={form.last_name || ""}
+              value={formData.last_name || ""}
               onChange={handleChange}
-              required
               className="mt-1 block w-full border rounded-md shadow-sm p-2"
             />
           </label>
 
-          <label className="sm:col-span-2">
+          <label className="block">
+            <span className="text-gray-700">Adres e-mail</span>
+            <input
+              type="email"
+              name="email"
+              value={formData.email || ""}
+              onChange={handleChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            />
+          </label>
+
+          <label className="block">
             <span className="text-gray-700">Telefon</span>
             <input
+              type="text"
               name="phone"
-              value={form.phone || ""}
-              onChange={handleChange}
+              value={formData.phone || ""}
+              onChange={handlePhoneChange}
               placeholder="123-456-789"
               className="mt-1 block w-full border rounded-md shadow-sm p-2"
             />
           </label>
 
-          <label className="sm:col-span-2">
+          <label className="block sm:col-span-2">
             <span className="text-gray-700">Adres</span>
             <input
+              type="text"
               name="address"
-              value={form.address || ""}
+              value={formData.address || ""}
               onChange={handleChange}
               className="mt-1 block w-full border rounded-md shadow-sm p-2"
             />
           </label>
 
-          {role === "organizator" && (
-            <>
-              <label>
-                <span className="text-gray-700">Nazwa klubu / organizacji</span>
-                <input
-                  name="club_name"
-                  value={form.club_name || ""}
-                  onChange={handleChange}
-                  className="mt-1 block w-full border rounded-md shadow-sm p-2"
-                />
-              </label>
+          <label className="block sm:col-span-2">
+            <span className="text-gray-700">Nazwa klubu / organizacji</span>
+            <input
+              type="text"
+              name="club_name"
+              value={formData.club_name || ""}
+              onChange={handleChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            />
+          </label>
 
-              <label>
-                <span className="text-gray-700">NIP</span>
-                <input
-                  name="nip"
-                  value={form.nip || ""}
-                  onChange={handleChange}
-                  className="mt-1 block w-full border rounded-md shadow-sm p-2"
-                />
-              </label>
-            </>
-          )}
+          <label className="block sm:col-span-2">
+            <span className="text-gray-700">NIP</span>
+            <input
+              type="text"
+              name="nip"
+              value={formData.nip || ""}
+              onChange={handleChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            />
+          </label>
 
-          {role === "sedzia" && (
+          <label className="block sm:col-span-2">
+            <span className="text-gray-700">Wiek</span>
+            <input
+              type="number"
+              name="age"
+              value={formData.age || ""}
+              onChange={handleChange}
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            />
+          </label>
+
+          {user.role === "sedzia" && (
             <label className="flex items-center gap-2 sm:col-span-2">
               <input
                 type="checkbox"
                 name="license"
-                checked={form.license || false}
+                checked={formData.license || false}
                 onChange={handleChange}
                 className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer"
               />
-              <span className="text-gray-700">Posiadam licencję sędziego</span>
+              <span>Posiadam licencję sędziego</span>
             </label>
           )}
         </div>
 
         <button
           type="submit"
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-semibold"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-semibold transition"
         >
           💾 Zapisz zmiany
         </button>
       </form>
 
-      {/* 🔹 KAFELKI AKCJI */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
-        <Link
-          href="/dashboard/settings/change-password"
-          className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
+      {/* Dodatkowe akcje */}
+      <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+        <button
+          onClick={handleChangePassword}
+          className="bg-yellow-400 hover:bg-yellow-500 text-white py-2 px-6 rounded-lg font-semibold transition"
         >
-          <span className="text-2xl">🔑</span>
-          <p className="font-semibold text-lg mt-2">Zmień hasło</p>
-        </Link>
-
-        <Link
-          href="/dashboard/settings/delete"
-          className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
+          🔑 Zmień hasło
+        </button>
+        <button
+          onClick={handleDeleteAccount}
+          className="bg-red-500 hover:bg-red-600 text-white py-2 px-6 rounded-lg font-semibold transition"
         >
-          <span className="text-2xl">🗑️</span>
-          <p className="font-semibold text-lg mt-2 text-red-600">Usuń konto</p>
-        </Link>
-      </div>
-
-      {/* 🔙 Powrót */}
-      <div className="text-center mt-10">
-        <Link
-          href={backToDashboard}
-          className="inline-block bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2 rounded-lg font-semibold transition"
-        >
-          ⬅️ Wróć do panelu głównego
-        </Link>
+          🗑️ Usuń konto
+        </button>
       </div>
     </main>
   );
