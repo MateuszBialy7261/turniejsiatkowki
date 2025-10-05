@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import WelcomeBar from "@/components/WelcomeBar";
 
 export default function SettingsPage() {
@@ -20,8 +21,6 @@ export default function SettingsPage() {
           window.location.href = "/login";
           return;
         }
-
-        // pobranie pełnych danych użytkownika z bazy
         const res2 = await fetch(`/api/admin/users/${data.id}`, {
           cache: "no-store",
         });
@@ -37,13 +36,11 @@ export default function SettingsPage() {
     loadUser();
   }, []);
 
-  // 🧩 Obsługa zmian pól
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
-  // 🧩 Formatowanie numeru telefonu
   const handlePhoneChange = (e) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length > 3 && value.length <= 6)
@@ -58,11 +55,9 @@ export default function SettingsPage() {
     setFormData({ ...formData, phone: value });
   };
 
-  // 🧩 Zapis danych
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
-
     try {
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: "PUT",
@@ -80,40 +75,6 @@ export default function SettingsPage() {
     }
   };
 
-  // 🧩 Zmiana hasła
-  const handleChangePassword = async () => {
-    const oldPass = prompt("Podaj obecne hasło:");
-    const newPass = prompt("Podaj nowe hasło:");
-    if (!oldPass || !newPass) return;
-
-    try {
-      const res = await fetch("/api/user/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ oldPass, newPass }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      alert("✅ Hasło zmienione pomyślnie!");
-    } catch (err) {
-      alert("❌ Błąd zmiany hasła: " + err.message);
-    }
-  };
-
-  // 🧩 Usunięcie konta
-  const handleDeleteAccount = async () => {
-    if (!confirm("Czy na pewno chcesz usunąć swoje konto?")) return;
-
-    try {
-      const res = await fetch("/api/user", { method: "DELETE" });
-      if (!res.ok) throw new Error("Nie udało się usunąć konta.");
-      alert("✅ Konto zostało usunięte.");
-      window.location.href = "/";
-    } catch (err) {
-      alert("❌ " + err.message);
-    }
-  };
-
   if (loading) return <p className="text-center mt-10 text-gray-500">Ładowanie...</p>;
 
   return (
@@ -121,8 +82,18 @@ export default function SettingsPage() {
       <div ref={topRef}></div>
       <WelcomeBar firstName={user?.first_name} role={user?.role} />
 
-      <h1 className="text-3xl font-bold mb-6 text-center">⚙️ Moje konto</h1>
+      {/* Nagłówek */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">⚙️ Ustawienia konta</h1>
+        <Link
+          href={`/dashboard/${user.role}`}
+          className="text-blue-500 hover:underline font-medium"
+        >
+          ⬅️ Powrót do panelu
+        </Link>
+      </div>
 
+      {/* Komunikat */}
       {message && (
         <div
           className={`mb-6 p-3 rounded relative shadow-md text-center ${
@@ -143,7 +114,10 @@ export default function SettingsPage() {
       )}
 
       {/* Formularz */}
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow-md">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-white p-6 rounded-xl shadow-md"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="block">
             <span className="text-gray-700">Imię</span>
@@ -167,7 +141,7 @@ export default function SettingsPage() {
             />
           </label>
 
-          <label className="block">
+          <label className="block sm:col-span-2">
             <span className="text-gray-700">Adres e-mail</span>
             <input
               type="email"
@@ -186,6 +160,17 @@ export default function SettingsPage() {
               value={formData.phone || ""}
               onChange={handlePhoneChange}
               placeholder="123-456-789"
+              className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-700">Wiek</span>
+            <input
+              type="number"
+              name="age"
+              value={formData.age || ""}
+              onChange={handleChange}
               className="mt-1 block w-full border rounded-md shadow-sm p-2"
             />
           </label>
@@ -223,17 +208,6 @@ export default function SettingsPage() {
             />
           </label>
 
-          <label className="block sm:col-span-2">
-            <span className="text-gray-700">Wiek</span>
-            <input
-              type="number"
-              name="age"
-              value={formData.age || ""}
-              onChange={handleChange}
-              className="mt-1 block w-full border rounded-md shadow-sm p-2"
-            />
-          </label>
-
           {user.role === "sedzia" && (
             <label className="flex items-center gap-2 sm:col-span-2">
               <input
@@ -256,20 +230,23 @@ export default function SettingsPage() {
         </button>
       </form>
 
-      {/* Dodatkowe akcje */}
-      <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-        <button
-          onClick={handleChangePassword}
-          className="bg-yellow-400 hover:bg-yellow-500 text-white py-2 px-6 rounded-lg font-semibold transition"
+      {/* KAFELKI */}
+      <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <Link
+          href="/dashboard/settings/password"
+          className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
         >
-          🔑 Zmień hasło
-        </button>
-        <button
-          onClick={handleDeleteAccount}
-          className="bg-red-500 hover:bg-red-600 text-white py-2 px-6 rounded-lg font-semibold transition"
+          <span className="text-2xl">🔑</span>
+          <p className="font-semibold text-lg mt-2">Zmień hasło</p>
+        </Link>
+
+        <Link
+          href="/dashboard/settings/delete"
+          className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
         >
-          🗑️ Usuń konto
-        </button>
+          <span className="text-2xl">🗑️</span>
+          <p className="font-semibold text-lg mt-2">Usuń konto</p>
+        </Link>
       </div>
     </main>
   );
