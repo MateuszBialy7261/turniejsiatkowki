@@ -37,7 +37,7 @@ export default function AdminDashboard() {
         </Link>
 
         <Link
-          href="/dashboard/admin/add-user"
+          href="/dashboard/admin/add"
           className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
         >
           <span className="text-2xl">➕</span>
