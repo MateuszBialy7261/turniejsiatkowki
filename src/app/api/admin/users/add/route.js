@@ -27,45 +27,46 @@ export async function POST(req) {
       );
     }
 
-    // 🧩 hasło
+    const clean = (v) => (v === "" || v === undefined ? null : v);
+
     const generatedPassword = Math.random().toString(36).slice(-8);
     const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
-    // 🧩 dane z rzutowaniem typów
-    const cleanData = {
+    const toInsert = {
       first_name,
       last_name,
       email,
       password: hashedPassword,
       role,
-      phone: phone || null,
-      address: address || null,
-      club_name: club_name || null,
-      nip: nip ? String(nip).trim() : null,
-      age: age ? Number(age) : null,
-      license: !!license,
       is_active: false,
     };
 
-    // 🧩 zapis
-    const { error: insertError } = await supabase.from("users").insert([cleanData]);
+    if (role === "sedzia") {
+      toInsert.phone = clean(phone);
+      toInsert.age = clean(age);
+      toInsert.license = !!license;
+    } else if (role === "organizator") {
+      toInsert.club_name = clean(club_name);
+      toInsert.nip = clean(nip);
+      toInsert.address = clean(address);
+      toInsert.phone = clean(phone);
+    }
+
+    const { error: insertError } = await supabase.from("users").insert([toInsert]);
+
     if (insertError) {
       console.error("❌ insert error:", insertError);
       return NextResponse.json(
-        { error: "Nie udało się dodać użytkownika." },
-        { status: 500 }
+        { error: insertError.message || "Nie udało się dodać użytkownika." },
+        { status: 400 }
       );
     }
 
-    // 🧩 token aktywacyjny
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "72h" });
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      "http://localhost:3000";
-    const activationLink = `${baseUrl}/api/activate?token=${token}`;
+    const safeToken = encodeURIComponent(token);
+    const baseUrl = new URL(req.url).origin; // ✅ niezależne od env
+    const activationLink = `${baseUrl}/api/activate?token=${safeToken}`;
 
-    // 🧩 mail
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
@@ -79,18 +80,23 @@ export async function POST(req) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: email,
-      subject: "Twoje konto w systemie Turniej Siatkówki – aktywacja i hasło",
+      subject: "Twoje konto – aktywacja i hasło (Turniej Siatkówki)",
       html: `
         <div style="font-family:Arial,sans-serif;color:#333;padding:12px">
           <h2>Witaj ${first_name}!</h2>
           <p>Administrator utworzył dla Ciebie konto w systemie <b>Turniej Siatkówki</b>.</p>
           <p><b>Login:</b> ${email}<br/><b>Tymczasowe hasło:</b> ${generatedPassword}</p>
-          <p>Kliknij przycisk poniżej, aby aktywować konto i potwierdzić zgodę na przetwarzanie danych:</p>
-          <p><a href="${activationLink}" style="background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Aktywuj konto</a></p>
+          <p>Kliknij poniższy przycisk, aby aktywować konto i potwierdzić zgodę na przetwarzanie danych:</p>
+          <p>
+            <a href="${activationLink}"
+               style="background:#3b82f6;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;font-weight:600">
+               Aktywuj konto
+            </a>
+          </p>
           <hr/>
           <p style="font-size:12px;color:#555;">
             Klikając w link aktywacyjny, wyrażasz zgodę na przetwarzanie danych osobowych przez
-            <b>Smart Web Solutions Mateusz Biały</b> w celach utworzenia konta i realizacji zadań turniejowych.
+            <b>Smart Web Solutions Mateusz Biały</b>.
           </p>
         </div>
       `,
