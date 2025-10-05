@@ -1,296 +1,108 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
 
-export default function AdminAddUserPage() {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    role: "",
-    phone: "",
-    age: "",
-    clubName: "",
-    nip: "",
-    address: "",
-    license: false,
-  });
+import { useEffect, useState } from "react";
+import Link from "next/link";
 
-  const [message, setMessage] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const topRef = useRef(null);
+export default function AdminUsersListPage() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
 
-  // 🧠 Autoryzacja admina
+  // guard
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/me", { credentials: "include" });
-        const data = await res.json();
-        if (!data.loggedIn || data.role !== "admin") {
+        const m = await (await fetch("/api/me", { credentials: "include" })).json();
+        if (!m.loggedIn || m.role !== "admin") {
           window.location.href = "/";
+          return;
         }
       } catch {
         window.location.href = "/";
+        return;
+      }
+      // load users
+      try {
+        const res = await fetch("/api/admin/users", { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Błąd pobierania");
+        setUsers(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setErr(e.message);
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
-  };
-
-  const handlePhoneChange = (e) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 3 && value.length <= 6) {
-      value = value.slice(0, 3) + "-" + value.slice(3);
-    } else if (value.length > 6) {
-      value =
-        value.slice(0, 3) +
-        "-" +
-        value.slice(3, 6) +
-        "-" +
-        value.slice(6, 9);
-    }
-    setFormData({ ...formData, phone: value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth" });
-    setSubmitting(true);
-    setMessage(null);
-
-    try {
-      const res = await fetch("/api/admin/users/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          role: formData.role,
-          phone: formData.phone,
-          age: formData.age,
-          club_name: formData.clubName,
-          nip: formData.nip,
-          address: formData.address,
-          license: formData.license,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage({
-          type: "success",
-          text: "✅ Użytkownik dodany. Wysłano e-mail z hasłem i linkiem aktywacyjnym.",
-        });
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          role: "",
-          phone: "",
-          age: "",
-          clubName: "",
-          nip: "",
-          address: "",
-          license: false,
-        });
-      } else {
-        setMessage({ type: "error", text: "❌ Błąd: " + data.error });
-      }
-    } catch {
-      setMessage({ type: "error", text: "❌ Błąd połączenia z serwerem." });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
-    <main className="max-w-2xl mx-auto p-6">
-      <div ref={topRef}></div>
-
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        ➕ Dodaj użytkownika
-      </h1>
-
-      {message && (
-        <div
-          className={`mb-6 p-3 rounded relative shadow-md text-center ${
-            message.type === "success"
-              ? "bg-[#d4edf8] text-black"
-              : "bg-red-100 text-red-800"
-          }`}
+    <main className="p-6 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">👥 Zarządzanie użytkownikami</h1>
+        <Link
+          href="/dashboard/admin/users/add"
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold"
         >
-          <span className="block font-medium">{message.text}</span>
-          <button
-            onClick={() => setMessage(null)}
-            type="button"
-            className="absolute top-2 right-3 text-lg font-bold hover:opacity-70"
-          >
-            ×
-          </button>
-        </div>
-      )}
+          ➕ Dodaj użytkownika
+        </Link>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow-md">
-        {/* Imię */}
-        <label className="block">
-          <span className="text-gray-700">Imię</span>
-          <input
-            type="text"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-            required
-          />
-        </label>
+      {loading && <p className="text-gray-500">⏳ Ładowanie…</p>}
+      {err && <div className="p-3 bg-red-100 text-red-800 rounded mb-4">❌ {err}</div>}
 
-        {/* Nazwisko */}
-        <label className="block">
-          <span className="text-gray-700">Nazwisko</span>
-          <input
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-            required
-          />
-        </label>
-
-        {/* E-mail */}
-        <label className="block">
-          <span className="text-gray-700">Adres e-mail</span>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-            required
-          />
-        </label>
-
-        {/* Rola */}
-        <label className="block">
-          <span className="text-gray-700">Rola</span>
-          <select
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-            required
-          >
-            <option value="">Wybierz rolę</option>
-            <option value="sedzia">Sędzia</option>
-            <option value="organizator">Organizator</option>
-            <option value="admin">Administrator</option>
-          </select>
-        </label>
-
-        {/* Pola dla sędziego */}
-        {formData.role === "sedzia" && (
-          <>
-            <label className="block">
-              <span className="text-gray-700">Numer telefonu</span>
-              <input
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handlePhoneChange}
-                placeholder="123-456-789"
-                maxLength={11}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-gray-700">Wiek</span>
-              <input
-                type="number"
-                name="age"
-                value={formData.age}
-                onChange={handleChange}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-              />
-            </label>
-
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                name="license"
-                checked={formData.license}
-                onChange={handleChange}
-                className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer"
-              />
-              <span>Czy posiadasz licencję sędziego?</span>
-            </label>
-          </>
-        )}
-
-        {/* Pola dla organizatora */}
-        {formData.role === "organizator" && (
-          <>
-            <label className="block">
-              <span className="text-gray-700">Pełna nazwa klubu</span>
-              <input
-                type="text"
-                name="clubName"
-                value={formData.clubName}
-                onChange={handleChange}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-gray-700">NIP</span>
-              <input
-                type="text"
-                name="nip"
-                value={formData.nip}
-                onChange={handleChange}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-gray-700">Adres</span>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-gray-700">Numer telefonu</span>
-              <input
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handlePhoneChange}
-                placeholder="123-456-789"
-                maxLength={11}
-                className="mt-1 block w-full border rounded-md shadow-sm p-2"
-              />
-            </label>
-          </>
-        )}
-
-        {/* Przycisk */}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
-        >
-          {submitting ? "Dodawanie..." : "Dodaj użytkownika"}
-        </button>
-      </form>
+      <div className="overflow-x-auto bg-white shadow-md rounded-xl">
+        <table className="min-w-full text-sm text-left">
+          <thead className="bg-blue-100 text-gray-800">
+            <tr>
+              <th className="py-3 px-4">Imię</th>
+              <th className="py-3 px-4">Nazwisko</th>
+              <th className="py-3 px-4">E-mail</th>
+              <th className="py-3 px-4">Rola</th>
+              <th className="py-3 px-4">Aktywne</th>
+              <th className="py-3 px-4 text-center">Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.length ? (
+              users.map((u) => (
+                <tr key={u.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4">{u.first_name}</td>
+                  <td className="py-3 px-4">{u.last_name}</td>
+                  <td className="py-3 px-4">{u.email}</td>
+                  <td className="py-3 px-4 font-medium">
+                    {u.role === "admin" ? (
+                      <span className="text-red-600">Administrator</span>
+                    ) : u.role === "organizator" ? (
+                      <span className="text-blue-600">Organizator</span>
+                    ) : (
+                      <span className="text-green-600">Sędzia</span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">{u.is_active ? "✔️" : "—"}</td>
+                  <td className="py-3 px-4 text-center">
+                    <Link
+                      href={`/dashboard/admin/users/${u.id}`}
+                      className="text-blue-600 hover:underline font-semibold"
+                    >
+                      Szczegóły / Edytuj
+                    </Link>
+                    {/* jeśli masz już endpoint DELETE, możesz dodać też przycisk usuń tutaj */}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              !loading &&
+              !err && (
+                <tr>
+                  <td colSpan="6" className="text-center py-6 text-gray-500">
+                    Brak użytkowników w bazie.
+                  </td>
+                </tr>
+              )
+            )}
+          </tbody>
+        </table>
+      </div>
     </main>
   );
 }

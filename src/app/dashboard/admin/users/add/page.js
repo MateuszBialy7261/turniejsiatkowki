@@ -1,49 +1,42 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
-import AuthLayout from "@/components/AuthLayout";
 
 export default function AdminAddUserPage() {
-  const [meChecked, setMeChecked] = useState(false);
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    confirmEmail: "",
+    role: "",
     phone: "",
     age: "",
     clubName: "",
     nip: "",
     address: "",
     license: false,
-    role: "",
   });
+
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const topRef = useRef(null);
 
-  // 🔐 sprawdzenie uprawnień
+  // 🧠 Autoryzacja admina
   useEffect(() => {
     (async () => {
       try {
-        const m = await (await fetch("/api/me", { credentials: "include" })).json();
-        if (!m.loggedIn || m.role !== "admin") {
+        const res = await fetch("/api/me", { credentials: "include" });
+        const data = await res.json();
+        if (!data.loggedIn || data.role !== "admin") {
           window.location.href = "/";
-          return;
         }
-        setMeChecked(true);
       } catch {
         window.location.href = "/";
       }
     })();
   }, []);
 
-  if (!meChecked) return null;
-
-  // 🔄 zmiana pól
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+    setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
   const handlePhoneChange = (e) => {
@@ -58,62 +51,69 @@ export default function AdminAddUserPage() {
         "-" +
         value.slice(6, 9);
     }
-    setForm({ ...form, phone: value });
+    setFormData({ ...formData, phone: value });
   };
 
-  // 📨 wysyłka danych
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth" });
     setSubmitting(true);
     setMessage(null);
-
-    if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth" });
-
-    if (form.email !== form.confirmEmail) {
-      setMessage({ type: "error", text: "❌ Adresy e-mail nie są takie same." });
-      setSubmitting(false);
-      return;
-    }
 
     try {
       const res = await fetch("/api/admin/users/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          role: formData.role,
+          phone: formData.phone,
+          age: formData.age,
+          club_name: formData.clubName,
+          nip: formData.nip,
+          address: formData.address,
+          license: formData.license,
+        }),
       });
+
       const data = await res.json();
 
       if (res.ok) {
         setMessage({
           type: "success",
-          text: "✅ Konto utworzone! Wysłano e-mail z hasłem i linkiem aktywacyjnym.",
+          text: "✅ Użytkownik dodany. Wysłano e-mail z hasłem i linkiem aktywacyjnym.",
         });
-        setForm({
+        setFormData({
           firstName: "",
           lastName: "",
           email: "",
-          confirmEmail: "",
+          role: "",
           phone: "",
           age: "",
           clubName: "",
           nip: "",
           address: "",
           license: false,
-          role: "",
         });
       } else {
-        throw new Error(data.error || "Błąd tworzenia użytkownika");
+        setMessage({ type: "error", text: "❌ Błąd: " + data.error });
       }
-    } catch (err) {
-      setMessage({ type: "error", text: "❌ " + err.message });
+    } catch {
+      setMessage({ type: "error", text: "❌ Błąd połączenia z serwerem." });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <AuthLayout>
+    <main className="max-w-2xl mx-auto p-6">
       <div ref={topRef}></div>
+
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        ➕ Dodaj użytkownika
+      </h1>
 
       {message && (
         <div
@@ -134,18 +134,14 @@ export default function AdminAddUserPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <h2 className="text-2xl font-bold mb-4 text-center">
-          ➕ Dodaj nowego użytkownika
-        </h2>
-
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-xl shadow-md">
         {/* Imię */}
         <label className="block">
           <span className="text-gray-700">Imię</span>
           <input
             type="text"
             name="firstName"
-            value={form.firstName}
+            value={formData.firstName}
             onChange={handleChange}
             className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
@@ -158,33 +154,20 @@ export default function AdminAddUserPage() {
           <input
             type="text"
             name="lastName"
-            value={form.lastName}
+            value={formData.lastName}
             onChange={handleChange}
             className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
           />
         </label>
 
-        {/* Email */}
+        {/* E-mail */}
         <label className="block">
           <span className="text-gray-700">Adres e-mail</span>
           <input
             type="email"
             name="email"
-            value={form.email}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-            required
-          />
-        </label>
-
-        {/* Potwierdzenie e-maila */}
-        <label className="block">
-          <span className="text-gray-700">Potwierdź adres e-mail</span>
-          <input
-            type="email"
-            name="confirmEmail"
-            value={form.confirmEmail}
+            value={formData.email}
             onChange={handleChange}
             className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
@@ -196,7 +179,7 @@ export default function AdminAddUserPage() {
           <span className="text-gray-700">Rola</span>
           <select
             name="role"
-            value={form.role}
+            value={formData.role}
             onChange={handleChange}
             className="mt-1 block w-full border rounded-md shadow-sm p-2"
             required
@@ -208,86 +191,106 @@ export default function AdminAddUserPage() {
           </select>
         </label>
 
-        {/* Telefon */}
-        <label className="block">
-          <span className="text-gray-700">Telefon</span>
-          <input
-            type="text"
-            name="phone"
-            value={form.phone}
-            onChange={handlePhoneChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-          />
-        </label>
+        {/* Pola dla sędziego */}
+        {formData.role === "sedzia" && (
+          <>
+            <label className="block">
+              <span className="text-gray-700">Numer telefonu</span>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handlePhoneChange}
+                placeholder="123-456-789"
+                maxLength={11}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
 
-        {/* Adres */}
-        <label className="block">
-          <span className="text-gray-700">Adres</span>
-          <input
-            type="text"
-            name="address"
-            value={form.address}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-          />
-        </label>
+            <label className="block">
+              <span className="text-gray-700">Wiek</span>
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
 
-        {/* Klub */}
-        <label className="block">
-          <span className="text-gray-700">Nazwa klubu</span>
-          <input
-            type="text"
-            name="clubName"
-            value={form.clubName}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-          />
-        </label>
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="license"
+                checked={formData.license}
+                onChange={handleChange}
+                className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer"
+              />
+              <span>Czy posiadasz licencję sędziego?</span>
+            </label>
+          </>
+        )}
 
-        {/* NIP */}
-        <label className="block">
-          <span className="text-gray-700">NIP</span>
-          <input
-            type="text"
-            name="nip"
-            value={form.nip}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-          />
-        </label>
+        {/* Pola dla organizatora */}
+        {formData.role === "organizator" && (
+          <>
+            <label className="block">
+              <span className="text-gray-700">Pełna nazwa klubu</span>
+              <input
+                type="text"
+                name="clubName"
+                value={formData.clubName}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
 
-        {/* Wiek */}
-        <label className="block">
-          <span className="text-gray-700">Wiek</span>
-          <input
-            type="number"
-            name="age"
-            value={form.age}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md shadow-sm p-2"
-          />
-        </label>
+            <label className="block">
+              <span className="text-gray-700">NIP</span>
+              <input
+                type="text"
+                name="nip"
+                value={formData.nip}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
 
-        {/* Licencja */}
-        <label className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            name="license"
-            checked={form.license}
-            onChange={handleChange}
-            className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer"
-          />
-          <span className="text-gray-700">Licencja sędziego</span>
-        </label>
+            <label className="block">
+              <span className="text-gray-700">Adres</span>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
 
+            <label className="block">
+              <span className="text-gray-700">Numer telefonu</span>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handlePhoneChange}
+                placeholder="123-456-789"
+                maxLength={11}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
+          </>
+        )}
+
+        {/* Przycisk */}
         <button
           type="submit"
           disabled={submitting}
-          className="w-full bg-blue-300 text-white py-2 rounded hover:bg-blue-400 transition cursor-pointer disabled:opacity-60"
+          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
         >
           {submitting ? "Dodawanie..." : "Dodaj użytkownika"}
         </button>
       </form>
-    </AuthLayout>
+    </main>
   );
 }
