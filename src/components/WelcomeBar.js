@@ -55,12 +55,13 @@ export default function WelcomeBar({ firstName, role }) {
           {roleNames[role]} • {dateTime}
         </p>
       </div>
-      <button
-        onClick={handleLogout}
-        className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-xl transition"
-      >
-        Wyloguj się
-      </button>
+    <button
+      onClick={handleLogout}
+      className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-xl transition cursor-pointer"
+    >
+      Wyloguj się
+    </button>
+
     </div>
   );
 }
