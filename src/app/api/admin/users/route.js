@@ -1,6 +1,8 @@
+// src/app/api/admin/users/route.js
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin as supabase } from "@/lib/supabaseAdmin";
 
+// 📦 Pobranie wszystkich użytkowników
 export async function GET() {
   const { data, error } = await supabase
     .from("users")
@@ -9,7 +11,10 @@ export async function GET() {
 
   if (error) {
     console.error("❌ GET /admin/users:", error);
-    return NextResponse.json({ error: "Błąd pobierania użytkowników." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Błąd pobierania użytkowników." },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json(data || []);
