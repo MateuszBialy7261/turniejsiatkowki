@@ -26,6 +26,15 @@ export default function SedziaDashboard() {
 
       <h1 className="text-3xl font-bold mb-6">🦸‍♂️ Panel sędziego</h1>
 
+      <Link
+      href="/dashboard/settings"
+      className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
+    >
+      <span className="text-2xl">🧍‍♂️</span>
+      <p className="font-semibold text-lg mt-2">Moje konto</p>
+    </Link>
+
+
       <div className="bg-white p-6 rounded-2xl shadow-md">
         <p className="text-gray-600">
           Tu wkrótce Twoje funkcje sędziowskie (przydziały meczów, terminarze, rozliczenia itd.).

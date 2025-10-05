@@ -28,6 +28,15 @@ export default function AdminDashboard() {
           <p className="font-semibold text-lg mt-2">Dodaj użytkownika</p>
         </Link>
 
+        <Link
+          href="/dashboard/settings"
+          className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
+        >
+          <span className="text-2xl">🧍‍♂️</span>
+          <p className="font-semibold text-lg mt-2">Moje konto</p>
+        </Link>
+
+
         <div className="bg-white p-6 rounded-2xl shadow-md text-center opacity-60">
           <span className="text-2xl">🏆</span>
           <p className="font-semibold text-lg mt-2">Utwórz turniej (wkrótce)</p>
