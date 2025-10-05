@@ -9,7 +9,6 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         if (data.loggedIn) {
-          // Normalizacja danych użytkownika, żeby zawsze mieć camelCase
           setUser({
             ...data,
             firstName: data.first_name || data.firstName || "",
@@ -20,7 +19,6 @@ export default function Home() {
       .catch(() => setUser(null));
   }, []);
 
-  // ✅ Pomocnicza funkcja do roli użytkownika
   const roleDisplay = (role) => {
     switch (role) {
       case "sedzia":
@@ -53,11 +51,38 @@ export default function Home() {
         </div>
       )}
 
+      {/* 🚀 Animowany przycisk do panelu */}
+      {user ? (
+        <a
+          href={`/dashboard/${user.role}`}
+          className="group relative block bg-gradient-to-r from-green-200 to-green-100 rounded-2xl shadow-md p-8 
+                     text-center text-2xl font-bold hover:from-green-300 hover:to-green-200 hover:scale-[1.03] 
+                     transition-all duration-300"
+        >
+          {/* 🚀 Rakieta podskakuje cały czas */}
+          <span className="inline-block animate-bounce-slow">🚀</span>{" "}
+          {user.role === "sedzia"
+            ? "Panel sędziego"
+            : user.role === "organizator"
+            ? "Panel organizatora"
+            : "Panel administratora"}
+        </a>
+      ) : (
+        <a
+          href="/login"
+          className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold 
+                     hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+        >
+          🔐 Logowanie organizatora / sędziego
+        </a>
+      )}
+
       {/* 🏐 Sekcja 1 — teraz gramy */}
       <div>
         <a
           href="#"
-          className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold 
+                     hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           🏐 Teraz gramy
         </a>
@@ -67,52 +92,32 @@ export default function Home() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <a
           href="#"
-          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold 
+                     hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           📖 Historia turniejów
         </a>
         <a
           href="#"
-          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold 
+                     hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           📝 Zamów turniej
         </a>
         <a
           href="#"
-          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold 
+                     hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           💰 Cennik
         </a>
         <a
           href="#"
-          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+          className="block bg-white rounded-2xl shadow-md p-6 text-center text-xl font-semibold 
+                     hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           📩 Kontakt
         </a>
-      </div>
-
-      {/* 🚀 Sekcja 3 — logowanie lub panel */}
-      <div>
-        {user ? (
-          <a
-            href={`/dashboard/${user.role}`}
-            className="block bg-green-100 rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-green-200 hover:scale-[1.02] transition-transform duration-300"
-          >
-            🚀{" "}
-            {user.role === "sedzia"
-              ? "Panel sędziego"
-              : user.role === "organizator"
-              ? "Panel organizatora"
-              : "Panel administratora"}
-          </a>
-        ) : (
-          <a
-            href="/login"
-            className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
-          >
-            🔐 Logowanie organizatora / sędziego
-          </a>
-        )}
       </div>
     </main>
   );
