@@ -53,3 +53,37 @@ export async function sendPasswordEmail(email, password, type = "new", firstName
     html,
   });
 }
+
+// 🆕 Nowa funkcja powiadomień o turniejach
+export async function sendTournamentNotification({ organizerName, organizerEmail, tournamentName, status }) {
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_SECURE === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  const subject = `📢 Nowy turniej: ${tournamentName}`;
+  const html = `
+    <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+      <h2>Nowy turniej został utworzony!</h2>
+      <p><b>Organizator:</b> ${organizerName} (${organizerEmail})</p>
+      <p><b>Nazwa turnieju:</b> ${tournamentName}</p>
+      <p><b>Status:</b> ${status === "pending" ? "Oczekuje na akceptację" : "Aktywny"}</p>
+      <br/>
+      <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/admin"
+         style="display: inline-block; padding: 10px 16px; background: #3b82f6;
+         color: white; border-radius: 6px; text-decoration: none;">Przejdź do panelu administratora</a>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: "sędzia@mateuszbialek.pl",
+    subject,
+    html,
+  });
+}
