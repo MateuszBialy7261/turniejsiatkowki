@@ -233,7 +233,7 @@ export default function SettingsPage() {
       {/* KAFELKI */}
       <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Link
-          href="/dashboard/settings/password"
+          href="/dashboard/settings/change-password"
           className="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition text-center"
         >
           <span className="text-2xl">🔑</span>

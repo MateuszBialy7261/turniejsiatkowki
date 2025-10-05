@@ -8,12 +8,19 @@ export default function Home() {
     fetch("/api/me", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
-        if (data.loggedIn) setUser(data);
+        if (data.loggedIn) {
+          // Normalizacja danych użytkownika, żeby zawsze mieć camelCase
+          setUser({
+            ...data,
+            firstName: data.first_name || data.firstName || "",
+            role: data.role || "",
+          });
+        }
       })
       .catch(() => setUser(null));
   }, []);
 
-  // Funkcja pomocnicza do roli
+  // ✅ Pomocnicza funkcja do roli użytkownika
   const roleDisplay = (role) => {
     switch (role) {
       case "sedzia":
@@ -23,14 +30,14 @@ export default function Home() {
       case "admin":
         return { label: "administrator", color: "text-red-600", icon: "👑" };
       default:
-        return { label: role, color: "text-gray-600", icon: "👤" };
+        return { label: "gość", color: "text-gray-600", icon: "👤" };
     }
   };
 
   return (
     <main className="flex-grow w-full p-8 space-y-8 text-gray-800">
 
-      {/* Powitalny kafelek */}
+      {/* 💬 Kafelek powitalny */}
       {user && (
         <div className="bg-gradient-to-r from-blue-200 to-blue-100 rounded-2xl shadow-md p-6 text-center">
           <h2 className="text-2xl font-bold text-gray-800">
@@ -41,12 +48,12 @@ export default function Home() {
             <span className={`font-semibold ${roleDisplay(user.role).color}`}>
               {roleDisplay(user.role).icon} {roleDisplay(user.role).label}
             </span>
-            . Baw się dobrze na turnieju! 🎉
+            . Miło Cię znów widzieć! 🎉
           </p>
         </div>
       )}
 
-      {/* Kafelek 1 */}
+      {/* 🏐 Sekcja 1 — teraz gramy */}
       <div>
         <a
           href="#"
@@ -56,7 +63,7 @@ export default function Home() {
         </a>
       </div>
 
-      {/* Kafelki 2 */}
+      {/* 📚 Sekcja 2 — dodatkowe linki */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <a
           href="#"
@@ -84,11 +91,11 @@ export default function Home() {
         </a>
       </div>
 
-      {/* Kafelek 3 → logowanie/panel */}
+      {/* 🚀 Sekcja 3 — logowanie lub panel */}
       <div>
         {user ? (
           <a
-            href={`/dashboard/${user.role}`} // 👈 teraz zawsze idzie do panelu
+            href={`/dashboard/${user.role}`}
             className="block bg-green-100 rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-green-200 hover:scale-[1.02] transition-transform duration-300"
           >
             🚀{" "}
