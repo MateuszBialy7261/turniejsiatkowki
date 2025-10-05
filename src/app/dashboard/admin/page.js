@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import WelcomeBar from "@/components/WelcomeBar";
 
 export default function AdminDashboard() {
@@ -19,26 +20,26 @@ export default function AdminDashboard() {
       {user && <WelcomeBar firstName={user.firstName} role={user.role} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-        <a
+        <Link
           href="/dashboard/admin/users"
           className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           👥 Zarządzanie użytkownikami
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="#"
           className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           🏐 Zarządzanie turniejami
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="#"
           className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
         >
           ⚙️ Ustawienia systemowe
-        </a>
+        </Link>
       </div>
 
       <div className="bg-white rounded-2xl shadow-md p-6 mt-8">
