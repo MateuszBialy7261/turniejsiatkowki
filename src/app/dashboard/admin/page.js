@@ -1,46 +1,53 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import WelcomeBar from "@/components/WelcomeBar";
 
-export default function AdminUsersPage() {
-  const [users, setUsers] = useState([]);
+export default function AdminDashboard() {
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetch("/api/users", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch((err) => console.error("❌ Błąd pobierania użytkowników:", err));
+    fetch("/api/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.loggedIn && data?.role === "admin") setUser(data);
+      })
+      .catch(() => setUser(null));
   }, []);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">👥 Zarządzanie użytkownikami</h1>
+    <main className="min-h-screen bg-[#f5f5f5] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      {user && <WelcomeBar firstName={user.firstName} role={user.role} />}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {users.map((user) => (
-          <Link
-            key={user.id}
-            href={`/dashboard/admin/users/${user.id}`}
-            className="block bg-white rounded-lg shadow-md hover:shadow-lg hover:bg-blue-50 p-4 transition"
-          >
-            <h2 className="text-lg font-semibold">{user.first_name} {user.last_name}</h2>
-            <p className="text-gray-600">{user.email}</p>
-            <p className="text-sm mt-2">
-              <span
-                className={`font-semibold ${
-                  user.role === "admin"
-                    ? "text-red-600"
-                    : user.role === "organizator"
-                    ? "text-blue-600"
-                    : "text-green-600"
-                }`}
-              >
-                {user.role}
-              </span>
-            </p>
-          </Link>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        <a
+          href="/dashboard/admin/users"
+          className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+        >
+          👥 Zarządzanie użytkownikami
+        </a>
+
+        <a
+          href="#"
+          className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+        >
+          🏐 Zarządzanie turniejami
+        </a>
+
+        <a
+          href="#"
+          className="block bg-white rounded-2xl shadow-md p-8 text-center text-2xl font-bold hover:bg-blue-100 hover:scale-[1.02] transition-transform duration-300"
+        >
+          ⚙️ Ustawienia systemowe
+        </a>
       </div>
-    </div>
+
+      <div className="bg-white rounded-2xl shadow-md p-6 mt-8">
+        <h2 className="text-xl font-bold mb-2">Wkrótce więcej funkcji</h2>
+        <p className="text-gray-600">
+          Tutaj pojawią się kolejne narzędzia administracyjne, m.in. logi,
+          statystyki i zarządzanie treściami.
+        </p>
+      </div>
+    </main>
   );
 }
