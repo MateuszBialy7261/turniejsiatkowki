@@ -7,8 +7,8 @@ export default function AdminUsersListPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const [msg, setMsg] = useState(null);
 
-  // guard
   useEffect(() => {
     (async () => {
       try {
@@ -21,19 +21,55 @@ export default function AdminUsersListPage() {
         window.location.href = "/";
         return;
       }
-      // load users
-      try {
-        const res = await fetch("/api/admin/users", { cache: "no-store" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error || "Błąd pobierania");
-        setUsers(Array.isArray(data) ? data : []);
-      } catch (e) {
-        setErr(e.message);
-      } finally {
-        setLoading(false);
-      }
+
+      await loadUsers();
     })();
   }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/users", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Błąd pobierania użytkowników");
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🗑️ Usuwanie użytkownika
+  const handleDelete = async (id, email) => {
+    if (!confirm(`Czy na pewno chcesz usunąć użytkownika ${email}?`)) return;
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Nie udało się usunąć użytkownika");
+
+      setMsg({ type: "success", text: "✅ Użytkownik został usunięty." });
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    } catch (err) {
+      setMsg({ type: "error", text: "❌ " + err.message });
+    }
+  };
+
+  // 🔄 Reset hasła
+  const handleResetPassword = async (id, email) => {
+    if (!confirm(`Czy chcesz zresetować hasło użytkownika ${email}?`)) return;
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/admin/users/${id}/reset`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Nie udało się zresetować hasła");
+
+      setMsg({ type: "success", text: `✅ Nowe hasło zostało wysłane na adres ${email}.` });
+    } catch (err) {
+      setMsg({ type: "error", text: "❌ " + err.message });
+    }
+  };
 
   return (
     <main className="p-6 max-w-6xl mx-auto">
@@ -46,6 +82,16 @@ export default function AdminUsersListPage() {
           ➕ Dodaj użytkownika
         </Link>
       </div>
+
+      {msg && (
+        <div
+          className={`mb-4 p-3 rounded ${
+            msg.type === "success" ? "bg-[#d4edf8] text-black" : "bg-red-100 text-red-800"
+          }`}
+        >
+          {msg.text}
+        </div>
+      )}
 
       {loading && <p className="text-gray-500">⏳ Ładowanie…</p>}
       {err && <div className="p-3 bg-red-100 text-red-800 rounded mb-4">❌ {err}</div>}
@@ -79,14 +125,25 @@ export default function AdminUsersListPage() {
                     )}
                   </td>
                   <td className="py-3 px-4">{u.is_active ? "✔️" : "—"}</td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-3 px-4 text-center space-x-3">
                     <Link
                       href={`/dashboard/admin/users/${u.id}`}
                       className="text-blue-600 hover:underline font-semibold"
                     >
-                      Szczegóły / Edytuj
+                      ✏️ Edytuj
                     </Link>
-                    {/* jeśli masz już endpoint DELETE, możesz dodać też przycisk usuń tutaj */}
+                    <button
+                      onClick={() => handleResetPassword(u.id, u.email)}
+                      className="text-orange-600 hover:underline font-semibold"
+                    >
+                      🔄 Resetuj hasło
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u.id, u.email)}
+                      className="text-red-600 hover:underline font-semibold"
+                    >
+                      🗑️ Usuń
+                    </button>
                   </td>
                 </tr>
               ))
