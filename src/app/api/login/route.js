@@ -5,16 +5,20 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function POST(req) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const emailRaw = body?.email || "";
+    const password = body?.password || "";
 
-    if (!email || !password) {
+    if (!emailRaw || !password) {
       return NextResponse.json(
         { error: "Email i hasło są wymagane." },
         { status: 400 }
       );
     }
 
-    // Pobierz użytkownika
+    // 🔽 normalizacja e-maila
+    const email = emailRaw.trim().toLowerCase();
+
     const { data: user, error } = await supabase
       .from("users")
       .select("*")
@@ -35,16 +39,11 @@ export async function POST(req) {
       );
     }
 
-    // Sprawdź hasło
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return NextResponse.json(
-        { error: "Błędne hasło." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Błędne hasło." }, { status: 401 });
     }
 
-    // JWT z rolą
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -57,12 +56,11 @@ export async function POST(req) {
       role: user.role,
     });
 
-    // Cookie httpOnly
     response.cookies.set("session", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax", // 👈 ważne
-      maxAge: 60 * 60 * 72, // 72h
+      sameSite: "lax",
+      maxAge: 60 * 60 * 72,
       path: "/",
     });
 

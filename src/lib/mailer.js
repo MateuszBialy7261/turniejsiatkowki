@@ -1,4 +1,3 @@
-// src/lib/mailer.js
 import nodemailer from "nodemailer";
 
 export async function sendPasswordEmail(email, password, type = "new", firstName = "") {
