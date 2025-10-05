@@ -47,10 +47,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // przewiń na górę przy komunikacie
-    if (topRef.current) {
-      topRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth" });
 
     if (formData.email !== formData.confirmEmail) {
       setMessage({ type: "error", text: "❌ Adresy e-mail nie są takie same." });
@@ -90,16 +87,14 @@ export default function RegisterPage() {
       if (res.ok) {
         setMessage({
           type: "success",
-          text: "✅ Twoje konto zostało zarejestrowane. Sprawdź e-mail, aby aktywować konto.",
+          text: "✅ Konto utworzone! Sprawdź skrzynkę e-mail, aby aktywować konto.",
         });
-        if (topRef.current) {
-          topRef.current.scrollIntoView({ behavior: "smooth" });
-        }
+        if (topRef.current) topRef.current.scrollIntoView({ behavior: "smooth" });
       } else {
-        setMessage({ type: "error", text: "❌ Błąd: " + data.error });
+        setMessage({ type: "error", text: "❌ " + (data.error || "Błąd rejestracji.") });
       }
-    } catch (err) {
-      setMessage({ type: "error", text: "❌ Wystąpił błąd połączenia." });
+    } catch {
+      setMessage({ type: "error", text: "❌ Wystąpił błąd połączenia z serwerem." });
     }
   };
 
@@ -107,7 +102,6 @@ export default function RegisterPage() {
     <AuthLayout>
       <div ref={topRef}></div>
 
-      {/* Komunikat */}
       {message && (
         <div
           className={`mb-6 p-3 rounded relative shadow-md text-center ${
@@ -128,7 +122,7 @@ export default function RegisterPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <h2 className="text-2xl font-bold mb-4 text-center">Rejestracja</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center">📝 Rejestracja</h2>
 
         {/* Imię */}
         <label className="block">
@@ -224,9 +218,83 @@ export default function RegisterPage() {
           </select>
         </label>
 
-        {/* Dalsze pola wg roli (pozostają bez zmian) */}
-        {/* ... */}
-        
+        {/* Pola specyficzne dla ról */}
+        {formData.role === "sedzia" && (
+          <>
+            <label className="block">
+              <span className="text-gray-700">Numer telefonu</span>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handlePhoneChange}
+                placeholder="123-456-789"
+                maxLength={11}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-gray-700">Wiek</span>
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                name="license"
+                checked={formData.license}
+                onChange={handleChange}
+                className="h-5 w-5 text-blue-400 border-gray-300 rounded cursor-pointer"
+              />
+              <span>Posiadam licencję sędziego</span>
+            </label>
+          </>
+        )}
+
+        {formData.role === "organizator" && (
+          <>
+            <label className="block">
+              <span className="text-gray-700">Nazwa klubu / organizacji</span>
+              <input
+                type="text"
+                name="clubName"
+                value={formData.clubName}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-gray-700">NIP</span>
+              <input
+                type="text"
+                name="nip"
+                value={formData.nip}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-gray-700">Adres</span>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                className="mt-1 block w-full border rounded-md shadow-sm p-2"
+              />
+            </label>
+          </>
+        )}
+
         {/* Pytanie pomocnicze */}
         <label className="block">
           <span className="text-gray-700 font-semibold">
@@ -243,7 +311,7 @@ export default function RegisterPage() {
           />
         </label>
 
-        {/* Checkbox RODO */}
+        {/* RODO */}
         <label className="flex items-start space-x-2">
           <input
             type="checkbox"
@@ -256,28 +324,16 @@ export default function RegisterPage() {
           <span className="text-xs text-gray-600">
             Wyrażam zgodę na przetwarzanie moich danych osobowych przez{" "}
             <strong>Smart Web Solutions Mateusz Biały</strong> w celach
-            utworzenia konta i realizacji zadań turniejowych. W razie
-            wątpliwości prosimy o{" "}
-            <a href="/kontakt" className="text-blue-500 hover:underline">
-              kontakt
-            </a>.
+            utworzenia konta i realizacji zadań turniejowych.
           </span>
         </label>
 
-        {/* Przycisk */}
         <button
           type="submit"
           className="w-full bg-blue-300 text-white py-2 rounded hover:bg-blue-400 transition cursor-pointer"
         >
           Zarejestruj się
         </button>
-
-        <p className="text-sm text-center mt-4">
-          Masz już konto?{" "}
-          <a href="/login" className="text-blue-500 hover:underline">
-            Zaloguj się tutaj
-          </a>
-        </p>
       </form>
     </AuthLayout>
   );
