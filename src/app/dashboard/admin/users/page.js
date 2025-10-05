@@ -76,7 +76,7 @@ export default function AdminUsersListPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">👥 Zarządzanie użytkownikami</h1>
         <Link
-          href="/dashboard/admin/users/add"
+          href="/dashboard/admin/add"
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold"
         >
           ➕ Dodaj użytkownika
