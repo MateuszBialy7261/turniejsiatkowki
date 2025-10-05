@@ -59,8 +59,11 @@ export default function Home() {
                      text-center text-2xl font-bold hover:from-green-300 hover:to-green-200 hover:scale-[1.03] 
                      transition-all duration-300"
         >
-          {/* 🚀 Rakieta podskakuje cały czas */}
-          <span className="inline-block animate-bounce-slow">🚀</span>{" "}
+          {/* 🚀 Rakieta z glow i ciągłym podskakiwaniem */}
+          <span className="inline-block animate-bounce-slow relative">
+            <span className="absolute inset-0 blur-md bg-green-400 opacity-60 rounded-full animate-pulse-slow"></span>
+            <span className="relative z-10">🚀</span>
+          </span>{" "}
           {user.role === "sedzia"
             ? "Panel sędziego"
             : user.role === "organizator"

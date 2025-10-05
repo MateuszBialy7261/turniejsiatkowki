@@ -21,9 +21,26 @@ body {
     transform: translateY(-6px);
   }
 }
+
 .animate-bounce-slow {
   animation: bounce-slow 2s infinite ease-in-out;
 }
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite ease-in-out;
+}
+
 
 
 @media (prefers-color-scheme: dark) {
