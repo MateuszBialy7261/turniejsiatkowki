@@ -34,6 +34,14 @@ export default function AdminUsersListPage() {
         </div>
       )}
 
+      <Link
+      href="/dashboard/admin/users/add"
+      className="inline-block mb-4 bg-blue-400 text-white px-4 py-2 rounded hover:bg-blue-500 transition"
+    >
+      ➕ Dodaj użytkownika
+    </Link>
+
+
       <div className="overflow-x-auto bg-white shadow-md rounded-xl">
         <table className="min-w-full text-sm text-left">
           <thead className="bg-blue-100 text-gray-800">
