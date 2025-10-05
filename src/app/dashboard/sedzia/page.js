@@ -1,12 +1,28 @@
 "use client";
+import { useEffect, useState } from "react";
 import WelcomeBar from "@/components/WelcomeBar";
 
 export default function SedziaDashboard() {
-  const user = { firstName: "Mateusz", role: "sedzia" };
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/me", { credentials: "include" });
+        const data = await res.json();
+        if (data.loggedIn) setUser(data);
+      } catch {
+        setUser(null);
+      }
+    }
+    loadUser();
+  }, []);
+
+  if (!user) return <p className="text-center mt-10 text-gray-500">Ładowanie...</p>;
 
   return (
     <main className="p-6 max-w-6xl mx-auto">
-      <WelcomeBar firstName={user.firstName} role={user.role} />
+      <WelcomeBar firstName={user.first_name} role={user.role} />
 
       <h1 className="text-3xl font-bold mb-6">🦸‍♂️ Panel sędziego</h1>
 
