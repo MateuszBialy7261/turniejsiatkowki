@@ -1,354 +1,303 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+
+import { useEffect, useState } from "react";
 
 export default function AdminUsersPage() {
-  const [me, setMe] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
   const [users, setUsers] = useState([]);
-  const [count, setCount] = useState(0);
-
-  // Form dodawania
-  const [openAdd, setOpenAdd] = useState(false);
-  const [addData, setAddData] = useState({
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
     first_name: "",
     last_name: "",
     email: "",
-    password: "",
-    role: "sedzia",
-    is_active: true,
+    role: "organizator",
   });
-  const [msg, setMsg] = useState(null);
+  const [message, setMessage] = useState(null);
 
-  useEffect(() => {
-    fetch("/api/me", { credentials: "include" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d.loggedIn || d.role !== "admin") {
-          window.location.href = "/login";
-        } else {
-          setMe(d);
-        }
-      })
-      .catch(() => (window.location.href = "/login"));
-  }, []);
-
+  // Pobierz użytkowników
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`, {
-        credentials: "include",
-      });
+      const res = await fetch("/api/admin/users");
       const data = await res.json();
-      if (res.ok) {
-        setUsers(data.items || []);
-        setCount(data.count || 0);
-      } else {
-        setMsg({ type: "error", text: data.error || "Nie udało się pobrać użytkowników." });
-      }
-    } catch {
-      setMsg({ type: "error", text: "Błąd pobierania." });
-    } finally {
-      setLoading(false);
+      if (res.ok) setUsers(data);
+      else console.error(data.error);
+    } catch (err) {
+      console.error("Błąd pobierania użytkowników:", err);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    if (me) fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me]);
+    fetchUsers();
+  }, []);
 
-  const onAddChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setAddData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+  // Obsługa formularza
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const submitAdd = async (e) => {
+  // Dodaj użytkownika
+  const handleAddUser = async (e) => {
     e.preventDefault();
+
+    if (!form.first_name || !form.last_name || !form.email) {
+      setMessage({ type: "error", text: "❌ Wypełnij wszystkie pola." });
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(addData),
+        body: JSON.stringify(form),
       });
+
       const data = await res.json();
+
       if (res.ok) {
-        setMsg({ type: "success", text: "Użytkownik dodany." });
-        setOpenAdd(false);
-        setAddData({
+        setMessage({
+          type: "success",
+          text: "✅ Użytkownik dodany! Na e-mail wysłano dane logowania.",
+        });
+        setForm({
           first_name: "",
           last_name: "",
           email: "",
-          password: "",
-          role: "sedzia",
-          is_active: true,
+          role: "organizator",
         });
-        fetchUsers();
+        fetchUsers(); // odśwież listę
       } else {
-        setMsg({ type: "error", text: data.error || "Błąd dodawania." });
+        setMessage({ type: "error", text: "❌ " + data.error });
       }
-    } catch {
-      setMsg({ type: "error", text: "Błąd połączenia przy dodawaniu." });
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: "error", text: "❌ Wystąpił błąd połączenia." });
     }
   };
 
-  const updateUser = async (id, patch) => {
+  // Zmień dane użytkownika (np. e-mail, imię, nazwisko, rola, aktywność)
+  const handleUpdateUser = async (id, field, value) => {
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(patch),
+        body: JSON.stringify({ [field]: value }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setMsg({ type: "success", text: "Zapisano zmiany." });
-        setUsers((prev) => prev.map((u) => (u.id === id ? data.user : u)));
-      } else {
-        setMsg({ type: "error", text: data.error || "Błąd zapisu." });
-      }
-    } catch {
-      setMsg({ type: "error", text: "Błąd połączenia przy edycji." });
+      if (res.ok) fetchUsers();
+    } catch (err) {
+      console.error("Błąd aktualizacji:", err);
     }
   };
 
-  const deleteUser = async (id) => {
-    if (!confirm("Na pewno usunąć użytkownika?")) return;
+  // Resetuj hasło
+  const handleResetPassword = async (id) => {
+    if (!confirm("Na pewno zresetować hasło użytkownika?")) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({
+          type: "success",
+          text: "✅ Hasło zresetowane i wysłane e-mailem.",
+        });
+      } else {
+        setMessage({ type: "error", text: "❌ " + data.error });
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: "error", text: "❌ Błąd połączenia." });
+    }
+  };
+
+  // Usuń użytkownika
+  const handleDelete = async (id) => {
+    if (!confirm("Czy na pewno chcesz usunąć użytkownika?")) return;
     try {
       const res = await fetch(`/api/admin/users/${id}`, {
         method: "DELETE",
-        credentials: "include",
       });
-      const data = await res.json();
       if (res.ok) {
-        setMsg({ type: "success", text: "Użytkownik usunięty." });
-        setUsers((prev) => prev.filter((u) => u.id !== id));
-        setCount((c) => Math.max(0, c - 1));
-      } else {
-        setMsg({ type: "error", text: data.error || "Błąd usuwania." });
+        fetchUsers();
+        setMessage({ type: "success", text: "✅ Użytkownik został usunięty." });
       }
-    } catch {
-      setMsg({ type: "error", text: "Błąd połączenia przy usuwaniu." });
+    } catch (err) {
+      console.error("Błąd usuwania:", err);
     }
   };
 
-  const roleLabel = useMemo(
-    () => (role) =>
-      role === "sedzia" ? "Sędzia" : role === "organizator" ? "Organizator" : "Administrator",
-    []
-  );
-
-  if (!me) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Ładowanie…</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#f5f5f5] p-6">
-      <div className="bg-white shadow rounded-xl p-4 mb-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold">Zarządzanie użytkownikami</h1>
-        <div className="flex gap-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Szukaj (imię, nazwisko, e-mail)…"
-            className="border rounded-md p-2 w-64"
-          />
-          <button
-            onClick={fetchUsers}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition"
-          >
-            Szukaj
-          </button>
-          <button
-            onClick={() => setOpenAdd((v) => !v)}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition"
-          >
-            {openAdd ? "Zamknij" : "Dodaj użytkownika"}
-          </button>
-        </div>
-      </div>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">👥 Zarządzanie użytkownikami</h1>
 
-      {msg && (
+      {/* Komunikaty */}
+      {message && (
         <div
           className={`mb-4 p-3 rounded relative shadow-md ${
-            msg.type === "success" ? "bg-[#d4edf8] text-black" : "bg-red-100 text-red-800"
+            message.type === "success"
+              ? "bg-green-100 text-green-900"
+              : "bg-red-100 text-red-800"
           }`}
         >
-          <span>{msg.text}</span>
+          <span>{message.text}</span>
           <button
-            onClick={() => setMsg(null)}
-            className="absolute top-2 right-3 font-bold"
-            aria-label="zamknij"
+            onClick={() => setMessage(null)}
+            className="absolute top-2 right-3 text-lg font-bold hover:opacity-70"
           >
             ×
           </button>
         </div>
       )}
 
-      {openAdd && (
-        <form
-          onSubmit={submitAdd}
-          className="bg-white shadow rounded-xl p-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4"
+      {/* Formularz dodania użytkownika */}
+      <form
+        onSubmit={handleAddUser}
+        className="bg-white shadow-md rounded-xl p-4 mb-8 space-y-4"
+      >
+        <h2 className="text-xl font-semibold mb-2">➕ Dodaj nowego użytkownika</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <input
+            type="text"
+            name="first_name"
+            value={form.first_name}
+            onChange={handleChange}
+            placeholder="Imię"
+            className="border rounded-md p-2"
+            required
+          />
+          <input
+            type="text"
+            name="last_name"
+            value={form.last_name}
+            onChange={handleChange}
+            placeholder="Nazwisko"
+            className="border rounded-md p-2"
+            required
+          />
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            placeholder="E-mail"
+            className="border rounded-md p-2"
+            required
+          />
+          <select
+            name="role"
+            value={form.role}
+            onChange={handleChange}
+            className="border rounded-md p-2"
+            required
+          >
+            <option value="organizator">Organizator</option>
+            <option value="sedzia">Sędzia</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          className="mt-4 bg-blue-400 hover:bg-blue-500 text-white font-semibold py-2 px-6 rounded transition"
         >
-          <div>
-            <label className="block text-sm text-gray-700">Imię</label>
-            <input
-              name="first_name"
-              value={addData.first_name}
-              onChange={onAddChange}
-              className="mt-1 w-full border rounded-md p-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700">Nazwisko</label>
-            <input
-              name="last_name"
-              value={addData.last_name}
-              onChange={onAddChange}
-              className="mt-1 w-full border rounded-md p-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700">E-mail</label>
-            <input
-              type="email"
-              name="email"
-              value={addData.email}
-              onChange={onAddChange}
-              className="mt-1 w-full border rounded-md p-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700">Hasło</label>
-            <input
-              type="password"
-              name="password"
-              value={addData.password}
-              onChange={onAddChange}
-              className="mt-1 w-full border rounded-md p-2"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-gray-700">Rola</label>
-            <select
-              name="role"
-              value={addData.role}
-              onChange={onAddChange}
-              className="mt-1 w-full border rounded-md p-2"
-            >
-              <option value="sedzia">Sędzia</option>
-              <option value="organizator">Organizator</option>
-              <option value="admin">Administrator</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="is_active"
-              type="checkbox"
-              name="is_active"
-              checked={addData.is_active}
-              onChange={onAddChange}
-            />
-            <label htmlFor="is_active" className="text-sm text-gray-700">
-              Konto aktywne
-            </label>
-          </div>
+          ➕ Dodaj użytkownika
+        </button>
+      </form>
 
-          <div className="sm:col-span-2">
-            <button
-              type="submit"
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
-            >
-              Dodaj
-            </button>
-          </div>
-        </form>
-      )}
+      {/* Lista użytkowników */}
+      <div className="bg-white shadow-md rounded-xl p-4 overflow-x-auto">
+        <h2 className="text-xl font-semibold mb-4">📋 Lista użytkowników</h2>
 
-      <div className="bg-white shadow rounded-xl overflow-x-auto">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-2">Imię</th>
-              <th className="text-left px-4 py-2">Nazwisko</th>
-              <th className="text-left px-4 py-2">E-mail</th>
-              <th className="text-left px-4 py-2">Rola</th>
-              <th className="text-left px-4 py-2">Aktywne</th>
-              <th className="text-left px-4 py-2">Utworzono</th>
-              <th className="text-left px-4 py-2">Akcje</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td className="px-4 py-4" colSpan={7}>
-                  Ładowanie…
-                </td>
+        {loading ? (
+          <p>Ładowanie...</p>
+        ) : users.length === 0 ? (
+          <p>Brak użytkowników w systemie.</p>
+        ) : (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100 text-left">
+                <th className="p-2 border">Imię</th>
+                <th className="p-2 border">Nazwisko</th>
+                <th className="p-2 border">E-mail</th>
+                <th className="p-2 border">Rola</th>
+                <th className="p-2 border">Aktywne</th>
+                <th className="p-2 border">Akcje</th>
               </tr>
-            ) : users.length === 0 ? (
-              <tr>
-                <td className="px-4 py-4" colSpan={7}>
-                  Brak wyników.
-                </td>
-              </tr>
-            ) : (
-              users.map((u) => (
-                <tr key={u.id} className="border-t">
-                  <td className="px-4 py-2">{u.first_name}</td>
-                  <td className="px-4 py-2">{u.last_name}</td>
-                  <td className="px-4 py-2">{u.email}</td>
-                  <td className="px-4 py-2">
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} className="hover:bg-gray-50">
+                  <td className="p-2 border">
+                    <input
+                      className="w-full p-1 border rounded"
+                      value={u.first_name || ""}
+                      onChange={(e) =>
+                        handleUpdateUser(u.id, "first_name", e.target.value)
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <input
+                      className="w-full p-1 border rounded"
+                      value={u.last_name || ""}
+                      onChange={(e) =>
+                        handleUpdateUser(u.id, "last_name", e.target.value)
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    <input
+                      className="w-full p-1 border rounded"
+                      value={u.email || ""}
+                      onChange={(e) =>
+                        handleUpdateUser(u.id, "email", e.target.value)
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border">
                     <select
                       value={u.role}
-                      onChange={(e) => updateUser(u.id, { role: e.target.value })}
-                      className="border rounded-md p-1"
+                      onChange={(e) =>
+                        handleUpdateUser(u.id, "role", e.target.value)
+                      }
+                      className="border rounded p-1"
                     >
-                      <option value="sedzia">Sędzia</option>
                       <option value="organizator">Organizator</option>
+                      <option value="sedzia">Sędzia</option>
                       <option value="admin">Administrator</option>
                     </select>
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="p-2 border text-center">
+                    <input
+                      type="checkbox"
+                      checked={u.is_active}
+                      onChange={(e) =>
+                        handleUpdateUser(u.id, "is_active", e.target.checked)
+                      }
+                    />
+                  </td>
+                  <td className="p-2 border text-center space-x-2">
                     <button
-                      onClick={() => updateUser(u.id, { is_active: !u.is_active })}
-                      className={`px-3 py-1 rounded-lg text-white ${
-                        u.is_active ? "bg-green-600 hover:bg-green-700" : "bg-gray-400 hover:bg-gray-500"
-                      }`}
+                      onClick={() => handleResetPassword(u.id)}
+                      className="bg-yellow-300 hover:bg-yellow-400 text-white py-1 px-2 rounded text-sm"
                     >
-                      {u.is_active ? "Aktywne" : "Nieaktywne"}
+                      🔑 Resetuj hasło
                     </button>
-                  </td>
-                  <td className="px-4 py-2">
-                    {u.created_at
-                      ? new Date(u.created_at).toLocaleString("pl-PL")
-                      : "-"}
-                  </td>
-                  <td className="px-4 py-2 space-x-2">
-                    {/* TODO: Pełna edycja w modal/stronie – etap 2 */}
                     <button
-                      onClick={() => deleteUser(u.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg"
+                      onClick={() => handleDelete(u.id)}
+                      className="bg-red-400 hover:bg-red-500 text-white py-1 px-2 rounded text-sm"
                     >
-                      Usuń
+                      🗑 Usuń
                     </button>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        <div className="px-4 py-3 text-sm text-gray-600">
-          Razem: {count}
-        </div>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
