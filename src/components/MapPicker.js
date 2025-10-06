@@ -1,8 +1,24 @@
 "use client";
 
+
+
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
+
+
+// 🧩 Naprawa problemu z brakiem ikony pinu w Leaflet (Next.js + Vercel)
+import iconUrl from "leaflet/dist/images/marker-icon.png";
+import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
+import shadowUrl from "leaflet/dist/images/marker-shadow.png";
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl,
+  iconUrl,
+  shadowUrl,
+});
 import L from "leaflet";
 
 // 🧩 WAŻNE: komponent działa wyłącznie po stronie klienta
