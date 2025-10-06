@@ -77,11 +77,11 @@ export default function TournamentForm({ role, user }) {
     if (!form.startDate || !form.endDate)
       return "Podaj daty rozpoczęcia i zakończenia.";
     if (!form.location.trim()) return "Podaj lokalizację.";
-    if (
-      (user?.role === "organizator" || role === "organizator") &&
-      !form.confirmCredit
-    )
+
+    // 🔹 Walidacja kredytu tylko dla organizatora
+    if ((user?.role === "organizator" || role === "organizator") && !form.confirmCredit)
       return "Musisz potwierdzić, że utworzenie turnieju pobiera jeden kredyt.";
+
     return null;
   };
 
@@ -351,7 +351,7 @@ export default function TournamentForm({ role, user }) {
         ></textarea>
       </div>
 
-      {/* Wpisowe / FB / Regulamin */}
+      {/* Wpisowe / FB */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">Wpisowe (zł)</label>
@@ -392,7 +392,7 @@ export default function TournamentForm({ role, user }) {
         ></textarea>
       </div>
 
-      {/* Checkbox kredytowy tylko dla organizatora */}
+      {/* Checkbox kredytowy — tylko organizator */}
       {(user?.role === "organizator" || role === "organizator") && (
         <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 p-3 rounded-lg">
           <input
@@ -401,10 +401,10 @@ export default function TournamentForm({ role, user }) {
             checked={form.confirmCredit}
             onChange={handleChange}
             className="mt-1 w-5 h-5 accent-blue-600"
+            required
           />
           <span className="text-sm text-gray-700">
-            Potwierdzam, że utworzenie turnieju pobiera{" "}
-            <b>1 kredyt</b> z mojego konta.
+            Potwierdzam, że utworzenie turnieju pobiera <b>1 kredyt</b> z mojego konta.
           </span>
         </div>
       )}
