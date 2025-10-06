@@ -123,11 +123,11 @@ export default function TournamentForm({ role, user }) {
     return (
       <div className="text-center py-10">
         <h2 className="text-2xl font-semibold text-green-600 mb-2">
-          ✅ Turniej został utworzony!
+          ✅ Turniej został utworzony! Możesz go już edytować w panelu organizatora.
         </h2>
         {status === "pending" ? (
           <p className="text-yellow-600">
-            Turniej oczekuje na akceptację administratora.
+            Turniej utworzony, jednak musieliśmy go od razu zablokować - <b>NIE MASZ DOSTĘPNYCH KREDYTÓW</b>. Skontaktuj się z administratorem, lub dokup kredyty i aktywuj turniej.
           </p>
         ) : (
           <p className="text-green-700">Turniej jest aktywny.</p>
@@ -404,7 +404,7 @@ export default function TournamentForm({ role, user }) {
             required
           />
           <span className="text-sm text-gray-700">
-            Potwierdzam, że utworzenie turnieju pobiera <b>1 kredyt</b> z mojego konta.
+            Potwierdzam, że utworzenie turnieju pobierze <b>1 kredyt</b> z mojego konta.
           </span>
         </div>
       )}
