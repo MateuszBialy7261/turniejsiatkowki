@@ -21,33 +21,40 @@ export default function TournamentForm({ role }) {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    try {
-      const res = await fetch("/api/tournaments/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ...form, role }),
-      });
+  try {
+    console.log("📤 Wysyłanie formularza:", form);
 
-      const data = await res.json();
+    const res = await fetch("/api/tournaments/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...form, role }),
+    });
 
-      if (res.ok) {
-        setSuccess(true);
-        setStatus(data.status);
-      } else {
-        setError(data.error || "Wystąpił błąd przy tworzeniu turnieju.");
-      }
-    } catch (err) {
-      setError("Błąd połączenia z serwerem.");
+    console.log("📥 Odpowiedź z serwera:", res.status);
+    const data = await res.json();
+    console.log("📦 Dane zwrócone:", data);
+
+    if (res.ok) {
+      setSuccess(true);
+      setStatus(data.status);
+    } else {
+      setError(data.error || "Wystąpił błąd przy tworzeniu turnieju.");
     }
+  } catch (err) {
+    console.error("❌ Błąd połączenia:", err);
+    setError("Błąd połączenia z serwerem.");
+  }
 
-    setLoading(false);
-  };
+  setLoading(false);
+};
+
 
   if (success) {
     return (
