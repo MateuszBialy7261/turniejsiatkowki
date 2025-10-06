@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import dynamic from "next/dynamic";
 const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
@@ -124,7 +125,7 @@ export default function TournamentForm({ role, user }) {
         </h2>
         {status === "pending" ? (
           <p className="text-yellow-600">
-            Nie posiadasz kredytów.. Skontaktuj się z nami, aby aktywować turniej. 
+            Turniej oczekuje na akceptację administratora.
           </p>
         ) : (
           <p className="text-green-700">Turniej jest aktywny.</p>
@@ -138,12 +139,13 @@ export default function TournamentForm({ role, user }) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-6 text-gray-800 bg-white p-6 rounded-2xl shadow-md"
     >
+      {/* 🔹 Sekcja informacyjna */}
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
         Uzupełnij szczegóły turnieju. <br />
         <b>Uwaga:</b> utworzenie turnieju pobiera jeden kredyt z Twojego konta.
       </div>
 
-      {/* Nazwa */}
+      {/* 🔹 Nazwa */}
       <div>
         <label className="block font-semibold mb-2">Nazwa turnieju *</label>
         <input
@@ -156,7 +158,7 @@ export default function TournamentForm({ role, user }) {
         />
       </div>
 
-      {/* Kategoria */}
+      {/* 🔹 Kategoria */}
       <div>
         <label className="block font-semibold mb-2">Kategoria *</label>
         <select
@@ -175,7 +177,7 @@ export default function TournamentForm({ role, user }) {
         </p>
       </div>
 
-      {/* Daty i godziny */}
+      {/* 🔹 Daty i godziny */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">
@@ -217,7 +219,7 @@ export default function TournamentForm({ role, user }) {
         </div>
       </div>
 
-      {/* Godziny otwarcia i odprawy */}
+      {/* 🔹 Godziny otwarcia i odprawy */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">
@@ -243,7 +245,7 @@ export default function TournamentForm({ role, user }) {
         </div>
       </div>
 
-      {/* Lokalizacja + mapa */}
+      {/* 🔹 Lokalizacja + mapa */}
       <div>
         <label className="block font-semibold mb-2">Lokalizacja turnieju *</label>
         <MapPicker
@@ -255,7 +257,7 @@ export default function TournamentForm({ role, user }) {
         />
       </div>
 
-      {/* Wskazówki dojazdu */}
+      {/* 🔹 Wskazówki dojazdu */}
       <div>
         <label className="block font-semibold mb-2">
           Wskazówki dojazdu i informacje o miejscu
@@ -270,8 +272,8 @@ export default function TournamentForm({ role, user }) {
         ></textarea>
       </div>
 
-      {/* Nagrody, atrakcje, wymogi */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      {/* 🔹 Nagrody, atrakcje, wymagania */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">Przewidywane nagrody</label>
           <textarea
@@ -294,40 +296,26 @@ export default function TournamentForm({ role, user }) {
             className="border rounded-lg w-full p-3"
           ></textarea>
         </div>
-        <div>
-          <label className="block font-semibold mb-2">Wymogi organizatora</label>
-          <textarea
-            name="requirements"
-            placeholder="np. jednolity strój, własne piłki..."
-            value={form.requirements}
-            onChange={handleChange}
-            rows="3"
-            className="border rounded-lg w-full p-3"
-          ></textarea>
-        </div>
       </div>
 
-      {/* Wpisowe */}
       <div>
-        <label className="block font-semibold mb-2">
-          Wysokość wpisowego (zł)
-        </label>
-        <input
-          type="number"
-          name="entryFee"
-          placeholder="np. 100"
-          value={form.entryFee}
+        <label className="block font-semibold mb-2">Wymogi organizatora</label>
+        <textarea
+          name="requirements"
+          placeholder="np. jednolity strój, własne piłki..."
+          value={form.requirements}
           onChange={handleChange}
+          rows="3"
           className="border rounded-lg w-full p-3"
-        />
+        ></textarea>
       </div>
 
-      {/* Facebook i regulamin */}
+      {/* 🔹 Link FB + wpisowe */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">Link do wydarzenia FB</label>
           <input
-            type="url"
+            type="text"
             name="facebookLink"
             placeholder="https://facebook.com/..."
             value={form.facebookLink}
@@ -336,19 +324,32 @@ export default function TournamentForm({ role, user }) {
           />
         </div>
         <div>
-          <label className="block font-semibold mb-2">Regulamin turnieju</label>
-          <textarea
-            name="rules"
-            placeholder="Wklej tutaj regulamin lub zasady rozgrywek..."
-            value={form.rules}
+          <label className="block font-semibold mb-2">Wysokość wpisowego (zł)</label>
+          <input
+            type="number"
+            name="entryFee"
+            placeholder="np. 100"
+            value={form.entryFee}
             onChange={handleChange}
-            rows="3"
             className="border rounded-lg w-full p-3"
-          ></textarea>
+          />
         </div>
       </div>
 
-      {/* Checkbox potwierdzający kredyt */}
+      {/* 🔹 Regulamin – pełna szerokość */}
+      <div>
+        <label className="block font-semibold mb-2">Regulamin turnieju</label>
+        <textarea
+          name="rules"
+          placeholder="Wklej tutaj regulamin lub zasady rozgrywek..."
+          value={form.rules}
+          onChange={handleChange}
+          rows="3"
+          className="border rounded-lg w-full p-3"
+        ></textarea>
+      </div>
+
+      {/* 🔹 Checkbox kredytowy */}
       <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 p-3 rounded-lg">
         <input
           type="checkbox"
@@ -358,16 +359,19 @@ export default function TournamentForm({ role, user }) {
           className="mt-1 w-5 h-5 accent-blue-600"
         />
         <span className="text-sm text-gray-700">
-          Potwierdzam, że utworzenie turnieju pobiera <b>1 kredyt</b> z mojego konta.
+          Potwierdzam, że utworzenie turnieju pobiera{" "}
+          <b>1 kredyt</b> z mojego konta.
         </span>
       </div>
 
+      {/* 🔹 Komunikat błędu */}
       {error && (
         <p className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-center font-medium">
           {error}
         </p>
       )}
 
+      {/* 🔹 Przycisk */}
       <button
         type="submit"
         disabled={loading}
