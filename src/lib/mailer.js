@@ -1,7 +1,8 @@
 import nodemailer from "nodemailer";
 
-export async function sendPasswordEmail(email, password, type = "new", firstName = "") {
-  const transporter = nodemailer.createTransport({
+// 🔹 Konfiguracja transportera e-mail
+function createTransporter() {
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
     secure: process.env.SMTP_SECURE === "true",
@@ -10,6 +11,11 @@ export async function sendPasswordEmail(email, password, type = "new", firstName
       pass: process.env.SMTP_PASS,
     },
   });
+}
+
+// 📨 Wysyłka e-maila z danymi logowania lub resetem hasła
+export async function sendPasswordEmail(email, password, type = "new", firstName = "") {
+  const transporter = createTransporter();
 
   let subject, html;
 
@@ -54,36 +60,81 @@ export async function sendPasswordEmail(email, password, type = "new", firstName
   });
 }
 
-// 🆕 Nowa funkcja powiadomień o turniejach
-export async function sendTournamentNotification({ organizerName, organizerEmail, tournamentName, status }) {
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_SECURE === "true",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+// 🆕 Powiadomienia o nowym turnieju
+export async function sendTournamentNotification({
+  organizerName,
+  organizerEmail,
+  tournament,
+  status,
+  recipients,
+  type = "admin", // "admin" lub "organizer"
+}) {
+  const transporter = createTransporter();
 
-  const subject = `📢 Nowy turniej: ${tournamentName}`;
-  const html = `
-    <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
-      <h2>Nowy turniej został utworzony!</h2>
-      <p><b>Organizator:</b> ${organizerName} (${organizerEmail})</p>
-      <p><b>Nazwa turnieju:</b> ${tournamentName}</p>
-      <p><b>Status:</b> ${status === "pending" ? "Oczekuje na akceptację" : "Aktywny"}</p>
-      <br/>
-      <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/admin"
-         style="display: inline-block; padding: 10px 16px; background: #3b82f6;
-         color: white; border-radius: 6px; text-decoration: none;">Przejdź do panelu administratora</a>
-    </div>
-  `;
+  let subject, html;
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM,
-    to: "sędzia@mateuszbialek.pl",
-    subject,
-    html,
-  });
+  if (type === "admin") {
+    subject = `📢 Nowy turniej: ${tournament.name}`;
+    html = `
+      <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+        <h2>Nowy turniej został utworzony przez ${organizerName} (${organizerEmail})</h2>
+        <p><b>Nazwa:</b> ${tournament.name}</p>
+        <p><b>Kategoria:</b> ${tournament.category?.join(", ") || "-"}</p>
+        <p><b>Data:</b> ${tournament.date_start} – ${tournament.date_end}</p>
+        <p><b>Lokalizacja:</b> ${tournament.location}</p>
+        <p><b>Status:</b> ${
+          status === "active" ? "✅ Aktywny" : "⏳ Oczekuje na akceptację"
+        }</p>
+        <hr/>
+        <p><b>Przewidywane nagrody:</b> ${tournament.prizes || "-"}</p>
+        <p><b>Atrakcje:</b> ${tournament.attractions || "-"}</p>
+        <p><b>Wymogi:</b> ${tournament.requirements || "-"}</p>
+        <p><b>Obsługa sędziowska:</b> ${tournament.referees?.join(", ") || "-"}</p>
+        <p><b>Wpisowe:</b> ${tournament.entry_fee ? tournament.entry_fee + " zł" : "-"}</p>
+        <p><b>Link do wydarzenia:</b> ${tournament.facebook_link || "-"}</p>
+        <p><b>Regulamin:</b> ${tournament.rules || "-"}</p>
+        <p><b>Wskazówki dojazdu:</b> ${tournament.travel_info || "-"}</p>
+        <br/>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/admin"
+           style="display: inline-block; padding: 10px 16px; background: #3b82f6;
+           color: white; border-radius: 6px; text-decoration: none;">Przejdź do panelu administratora</a>
+      </div>
+    `;
+  } else {
+    subject =
+      status === "active"
+        ? "✅ Twój turniej został aktywowany"
+        : "⏳ Twój turniej oczekuje na akceptację";
+
+    html =
+      status === "active"
+        ? `
+        <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+          <h2>Gratulacje! 🎉</h2>
+          <p>Twój turniej <b>${tournament.name}</b> został aktywowany i jest już widoczny w systemie.</p>
+          <p>Dziękujemy za organizację wydarzenia!</p>
+        </div>
+      `
+        : `
+        <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+          <h2>Dziękujemy za dodanie turnieju!</h2>
+          <p>Twój turniej <b>${tournament.name}</b> został zapisany, ale oczekuje na akceptację administratora.</p>
+          <p>Aby przyspieszyć proces, możesz:</p>
+          <ul>
+            <li>Upewnić się, że masz aktywne środki (kredyty) na koncie.</li>
+            <li>Skontaktować się z administratorem.</li>
+          </ul>
+          <p>Otrzymasz powiadomienie, gdy turniej zostanie zatwierdzony.</p>
+        </div>
+      `;
+  }
+
+  for (const recipient of recipients) {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to: recipient,
+      subject,
+      html,
+    });
+  }
 }
