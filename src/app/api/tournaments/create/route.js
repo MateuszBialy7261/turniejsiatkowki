@@ -4,42 +4,57 @@ import { getUserFromSession } from "@/lib/supabaseServer";
 import { sendTournamentNotification } from "@/lib/mailer";
 
 export async function POST(req) {
-  const user = await getUserFromSession(req);
-  if (!user)
-    return NextResponse.json({ error: "Brak autoryzacji" }, { status: 401 });
+  try {
+    const user = await getUserFromSession(req);
 
-  const { name, startDate, endDate, location, teamsCount, description } =
-    await req.json();
+    console.log("🔍 [API] Otrzymano żądanie utworzenia turnieju");
+    console.log("👤 Użytkownik:", user);
 
-  let status = "pending";
+    if (!user)
+      return NextResponse.json({ error: "Brak autoryzacji" }, { status: 401 });
 
-  if (user.role === "admin") {
-    status = "active";
-  } else if (user.role === "organizer") {
-    const credits = user.credits || 0;
-    if (credits > 0) {
+    const data = await req.json();
+    console.log("📦 Dane formularza:", data);
+
+    const { name, startDate, endDate, location, teamsCount, description } = data;
+
+    let status = "pending";
+
+    if (user.role === "admin") {
       status = "active";
-      await db.query("UPDATE users SET credits = credits - 1 WHERE id = ?", [
-        user.id,
-      ]);
+    } else if (user.role === "organizer") {
+      const credits = user.credits || 0;
+      if (credits > 0) {
+        status = "active";
+        await db.query("UPDATE users SET credits = credits - 1 WHERE id = ?", [
+          user.id,
+        ]);
+      }
     }
-  }
 
-  await db.query(
-    `INSERT INTO tournaments (name, start_date, end_date, location, teams_count, description, organizer_id, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [name, startDate, endDate, location, teamsCount, description, user.id, status]
-  );
+    console.log("💾 Wstawianie turnieju do bazy...");
 
-  // powiadom admina mailowo tylko jeśli to organizator
-  if (user.role === "organizer") {
+    const result = await db.query(
+      `INSERT INTO tournaments (name, start_date, end_date, location, teams_count, description, organizer_id, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, startDate, endDate, location, teamsCount, description, user.id, status]
+    );
+
+    console.log("✅ Zapisano turniej:", result);
+
     await sendTournamentNotification({
       organizerName: user.first_name || user.firstName || "Nieznany",
       organizerEmail: user.email,
       tournamentName: name,
       status,
     });
-  }
 
-  return NextResponse.json({ success: true, status });
+    return NextResponse.json({ success: true, status });
+  } catch (err) {
+    console.error("❌ Błąd w API /tournaments/create:", err);
+    return NextResponse.json(
+      { error: "Wystąpił błąd po stronie serwera", details: err.message },
+      { status: 500 }
+    );
+  }
 }
