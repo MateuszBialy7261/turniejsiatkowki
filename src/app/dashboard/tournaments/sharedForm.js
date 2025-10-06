@@ -3,7 +3,6 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
-
 export default function TournamentForm({ role, user }) {
   const [form, setForm] = useState({
     name: "",
@@ -125,7 +124,7 @@ export default function TournamentForm({ role, user }) {
         </h2>
         {status === "pending" ? (
           <p className="text-yellow-600">
-            Turniej oczekuje na akceptację administratora.
+            Nie posiadasz kredytów.. Skontaktuj się z nami, aby aktywować turniej. 
           </p>
         ) : (
           <p className="text-green-700">Turniej jest aktywny.</p>
@@ -263,12 +262,49 @@ export default function TournamentForm({ role, user }) {
         </label>
         <textarea
           name="travelInfo"
-          placeholder="np. Hala sportowa przy SP 4, wejście od ul. Mickiewicza, parking za budynkiem..."
+          placeholder="np. Hala przy SP 4, wejście od ul. Mickiewicza, parking za szkołą..."
           value={form.travelInfo}
           onChange={handleChange}
           rows="3"
           className="border rounded-lg w-full p-3"
         ></textarea>
+      </div>
+
+      {/* Nagrody, atrakcje, wymogi */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div>
+          <label className="block font-semibold mb-2">Przewidywane nagrody</label>
+          <textarea
+            name="prizes"
+            placeholder="np. Puchary, medale, nagrody rzeczowe..."
+            value={form.prizes}
+            onChange={handleChange}
+            rows="3"
+            className="border rounded-lg w-full p-3"
+          ></textarea>
+        </div>
+        <div>
+          <label className="block font-semibold mb-2">Atrakcje i udogodnienia</label>
+          <textarea
+            name="attractions"
+            placeholder="np. grill, muzyka, konkursy, strefa kibica..."
+            value={form.attractions}
+            onChange={handleChange}
+            rows="3"
+            className="border rounded-lg w-full p-3"
+          ></textarea>
+        </div>
+        <div>
+          <label className="block font-semibold mb-2">Wymogi organizatora</label>
+          <textarea
+            name="requirements"
+            placeholder="np. jednolity strój, własne piłki..."
+            value={form.requirements}
+            onChange={handleChange}
+            rows="3"
+            className="border rounded-lg w-full p-3"
+          ></textarea>
+        </div>
       </div>
 
       {/* Wpisowe */}
@@ -322,12 +358,10 @@ export default function TournamentForm({ role, user }) {
           className="mt-1 w-5 h-5 accent-blue-600"
         />
         <span className="text-sm text-gray-700">
-          Potwierdzam, że utworzenie turnieju pobiera{" "}
-          <b>1 kredyt</b> z mojego konta.
+          Potwierdzam, że utworzenie turnieju pobiera <b>1 kredyt</b> z mojego konta.
         </span>
       </div>
 
-      {/* Komunikat błędu */}
       {error && (
         <p className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-center font-medium">
           {error}

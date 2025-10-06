@@ -1,92 +1,74 @@
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { supabaseServer } from "@/lib/supabaseServer";
+import { sendTournamentNotification } from "@/lib/mailer";
 
 export async function POST(req) {
   try {
-    // 🔹 Pobranie danych użytkownika z ciasteczek
-    const userRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/me`, {
-      headers: {
-        cookie: req.headers.get("cookie") || "",
-      },
-    });
+    const { data: { session } } = await supabaseServer.auth.getSession();
 
-    const userData = await userRes.json();
-
-    if (!userData.loggedIn) {
-      return NextResponse.json({ error: "Nie jesteś zalogowany." }, { status: 401 });
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Brak autoryzacji. Zaloguj się ponownie." }, { status: 401 });
     }
 
-    const body = await req.json();
-    const {
-      name,
-      category,
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      openingTime,
-      briefingTime,
-      location,
-      latitude,
-      longitude,
-      prizes,
-      attractions,
-      requirements,
-      referees = [],
-      mealInfo,
-      entryFee,
-      facebookLink = null,
-      rules,
-      travelInfo,
-      role,
-    } = body;
+    const { name, category, startDate, startTime, endDate, endTime, openingTime, briefingTime,
+            location, latitude, longitude, prizes, attractions, requirements, referees,
+            mealInfo, entryFee, facebookLink, rules, travelInfo, role } = await req.json();
 
-    // 🔹 Status zależny od roli
-    const status = role === "admin" ? "approved" : "pending";
+    // Pobranie użytkownika z bazy
+    const [user] = await db.query("SELECT id, role, credits, email, first_name FROM users WHERE email = ?", [session.user.email]);
 
-    const { data, error } = await db
-      .from("tournaments")
-      .insert([
-        {
-          name,
-          category,
-          date_start: startDate,
-          start_time: startTime,
-          date_end: endDate,
-          end_time: endTime,
-          opening_time: openingTime,
-          briefing_time: briefingTime,
-          location,
-          latitude,
-          longitude,
-          prizes,
-          attractions,
-          requirements,
-          referees,
-          meal_info: mealInfo,
-          entry_fee: entryFee,
-          facebook_link: facebookLink,
-          rules,
-          travel_info: travelInfo,
-          organizer_id: userData.id,
-          status,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ])
-      .select();
-
-    if (error) {
-      console.error("❌ Błąd Supabase:", error);
-      return NextResponse.json({ error: "Nie udało się dodać turnieju." }, { status: 500 });
+    if (!user) {
+      return NextResponse.json({ error: "Nie znaleziono użytkownika w bazie." }, { status: 404 });
     }
 
-    return NextResponse.json({
-      message: "Turniej dodany pomyślnie!",
+    let status = "pending";
+
+    if (user.role === "admin" || role === "admin") {
+      status = "active"; // Admin zawsze aktywuje od razu
+    } else if (user.role === "organizer" || role === "organizer") {
+      if (user.credits > 0) {
+        status = "active";
+        await db.query("UPDATE users SET credits = credits - 1 WHERE id = ?", [user.id]);
+      } else {
+        status = "pending"; // brak kredytów = wymaga akceptacji
+      }
+    }
+
+    await db.query(
+      `INSERT INTO tournaments (
+        name, category, start_date, start_time, end_date, end_time,
+        opening_time, briefing_time, location, latitude, longitude,
+        prizes, attractions, requirements, referees, meal_info,
+        entry_fee, facebook_link, rules, travel_info,
+        organizer_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        name, category, startDate, startTime, endDate, endTime,
+        openingTime, briefingTime, location, latitude, longitude,
+        prizes, attractions, requirements, JSON.stringify(referees || []),
+        mealInfo, entryFee, facebookLink, rules, travelInfo,
+        user.id, status
+      ]
+    );
+
+    // Powiadomienie mailowe
+    await sendTournamentNotification({
+      organizerName: user.first_name || "Organizator",
+      organizerEmail: user.email,
+      tournamentName: name,
       status,
     });
-  } catch (err) {
-    console.error("❌ Błąd serwera:", err);
+
+    return NextResponse.json({
+      success: true,
+      message: status === "active"
+        ? "Turniej został aktywowany."
+        : "Turniej oczekuje na akceptację administratora.",
+      status,
+    });
+  } catch (error) {
+    console.error("❌ Błąd tworzenia turnieju:", error);
     return NextResponse.json({ error: "Błąd serwera." }, { status: 500 });
   }
 }
