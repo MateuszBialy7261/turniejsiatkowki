@@ -1,8 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import MapPicker from "@/components/MapPicker";
+import dynamic from "next/dynamic";
 
+// 🔹 MapPicker dynamicznie – działa tylko w przeglądarce
+const MapPicker = dynamic(() => import("@/components/MapPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="border rounded-xl bg-gray-50 p-6 text-center text-gray-500">
+      Wczytywanie mapy...
+    </div>
+  ),
+});
 
 export default function TournamentForm({ role }) {
   const [form, setForm] = useState({
@@ -217,7 +226,7 @@ export default function TournamentForm({ role }) {
         </div>
       </div>
 
-      {/* 🔹 Lokalizacja z mapą (OpenStreetMap + wyszukiwanie) */}
+      {/* 🔹 Lokalizacja z mapą (tylko w przeglądarce) */}
       <div>
         <label className="block font-semibold mb-2">Lokalizacja turnieju *</label>
         <MapPicker
@@ -228,8 +237,6 @@ export default function TournamentForm({ role }) {
           }
         />
       </div>
-
-
 
       {/* 🔹 Nagrody i atrakcje */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
