@@ -1,59 +1,84 @@
 import { NextResponse } from "next/server";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import db from "@/lib/db";
-import { getUserFromSession } from "@/lib/supabaseServer";
 import { sendTournamentNotification } from "@/lib/mailer";
 
 export async function POST(req) {
   try {
-    const user = await getUserFromSession(req);
-
-    console.log("🔍 [API] Otrzymano żądanie utworzenia turnieju");
-    console.log("👤 Użytkownik:", user);
+    // 🔹 Pobranie zalogowanego użytkownika z Supabase (cookie sesji)
+    const supabase = createRouteHandlerClient({ cookies });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user)
-      return NextResponse.json({ error: "Brak autoryzacji" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Brak autoryzacji" },
+        { status: 401 }
+      );
 
-    const data = await req.json();
-    console.log("📦 Dane formularza:", data);
+    // 🔹 Pobranie rozszerzonych danych użytkownika z bazy MySQL
+    const [profile] = await db.query("SELECT * FROM users WHERE id = ?", [
+      user.id,
+    ]);
+    const currentUser = profile || {};
 
-    const { name, startDate, endDate, location, teamsCount, description } = data;
+    // 🔹 Dane z formularza
+    const { name, startDate, endDate, location, teamsCount, description } =
+      await req.json();
 
     let status = "pending";
 
-    if (user.role === "admin") {
+    // 🔹 Admin → natychmiast aktywny
+    if (currentUser.role === "admin") {
       status = "active";
-    } else if (user.role === "organizer") {
-      const credits = user.credits || 0;
+    }
+    // 🔹 Organizator → aktywny tylko jeśli ma kredyty
+    else if (currentUser.role === "organizer") {
+      const credits = currentUser.credits || 0;
       if (credits > 0) {
         status = "active";
         await db.query("UPDATE users SET credits = credits - 1 WHERE id = ?", [
-          user.id,
+          currentUser.id,
         ]);
       }
     }
 
-    console.log("💾 Wstawianie turnieju do bazy...");
-
+    // 🔹 Wstawienie nowego turnieju
     const result = await db.query(
       `INSERT INTO tournaments (name, start_date, end_date, location, teams_count, description, organizer_id, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, startDate, endDate, location, teamsCount, description, user.id, status]
+      [
+        name,
+        startDate,
+        endDate,
+        location,
+        teamsCount,
+        description,
+        currentUser.id,
+        status,
+      ]
     );
 
-    console.log("✅ Zapisano turniej:", result);
+    console.log("✅ [API] Turniej zapisany w bazie:", result);
 
-    await sendTournamentNotification({
-      organizerName: user.first_name || user.firstName || "Nieznany",
-      organizerEmail: user.email,
-      tournamentName: name,
-      status,
-    });
+    // 🔹 Wysłanie powiadomienia e-mail (dla organizatorów)
+    if (currentUser.role === "organizer") {
+      await sendTournamentNotification({
+        organizerName:
+          currentUser.first_name || currentUser.firstName || "Nieznany",
+        organizerEmail: currentUser.email,
+        tournamentName: name,
+        status,
+      });
+    }
 
     return NextResponse.json({ success: true, status });
   } catch (err) {
-    console.error("❌ Błąd w API /tournaments/create:", err);
+    console.error("❌ [API] Błąd tworzenia turnieju:", err);
     return NextResponse.json(
-      { error: "Wystąpił błąd po stronie serwera", details: err.message },
+      { error: "Błąd po stronie serwera", details: err.message },
       { status: 500 }
     );
   }

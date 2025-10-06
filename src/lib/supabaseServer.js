@@ -1,26 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
+// 🔹 Klient serwisowy (do operacji administracyjnych)
 const supabaseServer = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // 🔐 ważne: klucz serwisowy
+  process.env.SUPABASE_SERVICE_ROLE_KEY // 🔐 klucz serwisowy
 );
 
-// ✅ Funkcja zwraca użytkownika z Supabase + ewentualnie jego dane z tabeli `users`
+// 🔹 Funkcja pomocnicza do pobierania użytkownika z sesji Supabase
 export async function getUserFromSession() {
+  const supabase = createServerComponentClient({ cookies });
   const {
     data: { user },
-  } = await supabaseServer.auth.getUser();
+  } = await supabase.auth.getUser();
 
   if (!user) return null;
 
-  // Pobierz profil użytkownika (np. role, credits)
-  const { data: profile } = await supabaseServer
-    .from("users")
-    .select("*")
-    .eq("id", user.id)
-    .single();
-
-  return profile;
+  return user;
 }
 
 export { supabaseServer };

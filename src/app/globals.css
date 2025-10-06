@@ -41,6 +41,11 @@ body {
   animation: pulse-slow 3s infinite ease-in-out;
 }
 
+.leaflet-container {
+  width: 100%;
+  height: 300px;
+  border-radius: 12px;
+}
 
 
 @media (prefers-color-scheme: dark) {
