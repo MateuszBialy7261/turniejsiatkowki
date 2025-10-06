@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 import db from "@/lib/db";
 
 export async function POST(req) {
-  const supabase = createRouteHandlerClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Nie jesteś zalogowany." }, { status: 401 });
-  }
-
   try {
+    // 🔹 Pobranie danych użytkownika z ciasteczek
+    const userRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/me`, {
+      headers: {
+        cookie: req.headers.get("cookie") || "",
+      },
+    });
+
+    const userData = await userRes.json();
+
+    if (!userData.loggedIn) {
+      return NextResponse.json({ error: "Nie jesteś zalogowany." }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
       name,
@@ -28,15 +32,16 @@ export async function POST(req) {
       prizes,
       attractions,
       requirements,
-      referees,
+      referees = [],
       mealInfo,
       entryFee,
-      facebookLink,
+      facebookLink = null,
       rules,
       travelInfo,
-      role
+      role,
     } = body;
 
+    // 🔹 Status zależny od roli
     const status = role === "admin" ? "approved" : "pending";
 
     const { data, error } = await db
@@ -63,22 +68,25 @@ export async function POST(req) {
           facebook_link: facebookLink,
           rules,
           travel_info: travelInfo,
-          organizer_id: user.id,
+          organizer_id: userData.id,
           status,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
+          updated_at: new Date().toISOString(),
+        },
       ])
       .select();
 
     if (error) {
-      console.error("Błąd Supabase:", error);
+      console.error("❌ Błąd Supabase:", error);
       return NextResponse.json({ error: "Nie udało się dodać turnieju." }, { status: 500 });
     }
 
-    return NextResponse.json({ message: "Turniej dodany pomyślnie", status });
+    return NextResponse.json({
+      message: "Turniej dodany pomyślnie!",
+      status,
+    });
   } catch (err) {
-    console.error("Błąd serwera:", err);
+    console.error("❌ Błąd serwera:", err);
     return NextResponse.json({ error: "Błąd serwera." }, { status: 500 });
   }
 }
