@@ -251,6 +251,25 @@ export default function TournamentForm({ role }) {
           }
         />
       </div>
+        {/* 🔹 Wskazówki dojazdu i informacje o lokalizacji */}
+        <div>
+          <label className="block font-semibold mb-2">
+            Wskazówki dojazdu i informacje o lokalizacji
+          </label>
+          <textarea
+            name="directions"
+            placeholder="np. Turniej rozgrywany w hali SP 7 przy ul. Poplińskiego 4. Parking dla autokarów od strony ul. Szkolnej. Wejście główne od strony boiska. W pobliżu stacja benzynowa i sklep spożywczy."
+            value={form.directions || ""}
+            onChange={handleChange}
+            rows="3"
+            className="border rounded-lg w-full p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+          ></textarea>
+          <p className="text-sm text-gray-500 mt-1">
+            Możesz podać nazwę hali, parking, wejście główne, udogodnienia dla gości lub inne ważne informacje.
+          </p>
+        </div>
+
+
 
       {/* 🔹 Wpisowe + link FB */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
