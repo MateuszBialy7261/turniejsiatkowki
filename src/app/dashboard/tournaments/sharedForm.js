@@ -42,6 +42,8 @@ export default function TournamentForm({ role }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState(null);
+  const [creditConsent, setCreditConsent] = useState(false);
+
 
   const categories = [
     "Rzucanka",
@@ -365,19 +367,45 @@ export default function TournamentForm({ role }) {
         ></textarea>
       </div>
 
-      {error && (
-        <p className="text-red-600 font-medium bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-          {error}
-        </p>
-      )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition"
-      >
-        {loading ? "⏳ Tworzenie..." : "Utwórz turniej"}
-      </button>
+     {/* 🔹 Potwierdzenie wykorzystania kredytu */}
+{role === "organizer" && (
+  <div className="flex items-start gap-3 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <input
+      type="checkbox"
+      id="creditConsent"
+      checked={creditConsent}
+      onChange={(e) => setCreditConsent(e.target.checked)}
+      className="mt-1 w-5 h-5 accent-yellow-500 cursor-pointer"
+      required
+    />
+    <label htmlFor="creditConsent" className="text-sm text-yellow-800">
+      Potwierdzam utworzenie turnieju i rozumiem, że z mojego konta zostanie
+      pobrany <span className="font-semibold">1 kredyt</span> za jego aktywację.
+    </label>
+  </div>
+)}
+
+{/* 🔹 Komunikaty błędów */}
+{error && (
+  <p className="text-red-600 font-medium bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+    {error}
+  </p>
+)}
+
+{/* 🔹 Przycisk */}
+<button
+  type="submit"
+  disabled={loading || (role === "organizer" && !creditConsent)}
+  className={`${
+    loading || (role === "organizer" && !creditConsent)
+      ? "bg-gray-400 cursor-not-allowed"
+      : "bg-blue-600 hover:bg-blue-700"
+  } text-white font-semibold py-3 rounded-xl transition`}
+>
+  {loading ? "⏳ Tworzenie..." : "Utwórz turniej"}
+</button>
+
     </form>
   );
 }
