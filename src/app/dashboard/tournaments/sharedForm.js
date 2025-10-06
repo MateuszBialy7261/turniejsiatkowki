@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 
-// 🔹 MapPicker dynamicznie – działa tylko w przeglądarce
+// 🔹 MapPicker tylko po stronie klienta (nie wywoła "window is not defined")
 const MapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
   loading: () => (
@@ -26,6 +26,9 @@ export default function TournamentForm({ role }) {
     location: "",
     latitude: "",
     longitude: "",
+    entryFee: "",
+    facebookLink: "",
+    rules: "",
     teamsCount: "",
     description: "",
     prizes: "",
@@ -123,8 +126,17 @@ export default function TournamentForm({ role }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 text-gray-800">
       {/* 🔹 Sekcja informacyjna */}
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
-        Uzupełnij szczegóły turnieju. Wszystkie dane możesz później edytować.
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700 leading-relaxed">
+        <p>
+          Uzupełnij szczegóły turnieju. Pamiętaj, że{" "}
+          <strong>turniej może mieć kilka kategorii</strong> (np. „dwójki
+          chłopców”, „trójki dziewcząt” itd.).
+        </p>
+        <p className="mt-1">
+          Każda kategoria to osobny wpis – możesz później{" "}
+          <strong>skopiować istniejący turniej</strong> w panelu organizatora i
+          dodać nową kategorię.
+        </p>
       </div>
 
       {/* 🔹 Nazwa */}
@@ -203,7 +215,7 @@ export default function TournamentForm({ role }) {
       {/* 🔹 Godziny otwarcia i odprawy */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-          <label className="block font-semibold mb-2">Godzina otwarcia zawodów *</label>
+          <label className="block font-semibold mb-2">Godzina otwarcia *</label>
           <input
             type="time"
             name="openingTime"
@@ -226,7 +238,7 @@ export default function TournamentForm({ role }) {
         </div>
       </div>
 
-      {/* 🔹 Lokalizacja z mapą (tylko w przeglądarce) */}
+      {/* 🔹 Lokalizacja i mapa */}
       <div>
         <label className="block font-semibold mb-2">Lokalizacja turnieju *</label>
         <MapPicker
@@ -236,6 +248,47 @@ export default function TournamentForm({ role }) {
             setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }))
           }
         />
+      </div>
+
+      {/* 🔹 Wpisowe + link FB */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <label className="block font-semibold mb-2">
+            Wysokość wpisowego (od zespołu)
+          </label>
+          <input
+            type="text"
+            name="entryFee"
+            placeholder="np. 100 zł / drużyna"
+            value={form.entryFee}
+            onChange={handleChange}
+            className="border rounded-lg w-full p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold mb-2">Link do wydarzenia (Facebook)</label>
+          <input
+            type="url"
+            name="facebookLink"
+            placeholder="np. https://facebook.com/events/..."
+            value={form.facebookLink}
+            onChange={handleChange}
+            className="border rounded-lg w-full p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+      </div>
+
+      {/* 🔹 Regulamin */}
+      <div>
+        <label className="block font-semibold mb-2">Regulamin turnieju</label>
+        <textarea
+          name="rules"
+          placeholder="Wklej treść regulaminu lub jego główne punkty..."
+          value={form.rules}
+          onChange={handleChange}
+          rows="4"
+          className="border rounded-lg w-full p-3 focus:ring-2 focus:ring-blue-500 outline-none"
+        ></textarea>
       </div>
 
       {/* 🔹 Nagrody i atrakcje */}
@@ -312,14 +365,12 @@ export default function TournamentForm({ role }) {
         ></textarea>
       </div>
 
-      {/* 🔹 Komunikaty błędów */}
       {error && (
         <p className="text-red-600 font-medium bg-red-50 border border-red-200 rounded-lg p-3 text-center">
           {error}
         </p>
       )}
 
-      {/* 🔹 Przycisk */}
       <button
         type="submit"
         disabled={loading}
