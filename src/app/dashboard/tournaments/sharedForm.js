@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
-import MapPicker from "@/components/MapPicker";
+import dynamic from "next/dynamic";
+const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
+
 
 export default function TournamentForm({ role, user }) {
   const [form, setForm] = useState({
