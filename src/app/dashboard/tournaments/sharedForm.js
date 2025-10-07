@@ -1,9 +1,15 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
-export default function TournamentForm({ role, user }) {
+export default function TournamentForm({
+  role,
+  user,
+  initialData = null,
+  onSubmit = null,
+  buttonLabel = "Utwórz turniej",
+}) {
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -32,6 +38,18 @@ export default function TournamentForm({ role, user }) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState(null);
+
+  // 🔹 Jeśli przekazano dane początkowe (np. przy edycji), wczytaj je do formularza
+  useEffect(() => {
+    if (initialData) {
+      setForm((prev) => ({
+        ...prev,
+        ...initialData,
+        referees: initialData.referees || [],
+        confirmCredit: false, // reset przy edycji
+      }));
+    }
+  }, [initialData]);
 
   const categories = [
     "Rzucanka",
@@ -78,9 +96,13 @@ export default function TournamentForm({ role, user }) {
       return "Podaj daty rozpoczęcia i zakończenia.";
     if (!form.location.trim()) return "Podaj lokalizację.";
 
-    // 🔹 Walidacja kredytu tylko dla organizatora
-    if ((user?.role === "organizator" || role === "organizator") && !form.confirmCredit)
+    if (
+      (user?.role === "organizator" || role === "organizator") &&
+      !initialData && // tylko przy tworzeniu, nie przy edycji
+      !form.confirmCredit
+    ) {
       return "Musisz potwierdzić, że utworzenie turnieju pobiera jeden kredyt.";
+    }
 
     return null;
   };
@@ -98,6 +120,14 @@ export default function TournamentForm({ role, user }) {
     }
 
     try {
+      // 🔹 Jeśli komponent ma przekazany własny handler (np. edycja)
+      if (onSubmit) {
+        await onSubmit(form);
+        setLoading(false);
+        return;
+      }
+
+      // 🔹 Domyślna obsługa tworzenia nowego turnieju
       const res = await fetch("/api/tournaments/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,7 +157,8 @@ export default function TournamentForm({ role, user }) {
         </h2>
         {status === "pending" ? (
           <p className="text-yellow-600">
-            Turniej utworzony, jednak musieliśmy go od razu zablokować - <b>NIE MASZ DOSTĘPNYCH KREDYTÓW</b>. Skontaktuj się z administratorem, lub dokup kredyty i aktywuj turniej.
+            Turniej utworzony, jednak został{" "}
+            <b>wstrzymany — brak dostępnych kredytów.</b>
           </p>
         ) : (
           <p className="text-green-700">Turniej jest aktywny.</p>
@@ -179,9 +210,6 @@ export default function TournamentForm({ role, user }) {
             <option key={cat}>{cat}</option>
           ))}
         </select>
-        <p className="text-xs text-gray-500 mt-1">
-          W przyszłości możesz skopiować turniej i dodać kolejną kategorię.
-        </p>
       </div>
 
       {/* Daty i godziny */}
@@ -241,7 +269,9 @@ export default function TournamentForm({ role, user }) {
           />
         </div>
         <div>
-          <label className="block font-semibold mb-2">Odprawa z trenerami</label>
+          <label className="block font-semibold mb-2">
+            Odprawa z trenerami
+          </label>
           <input
             type="time"
             name="briefingTime"
@@ -264,14 +294,13 @@ export default function TournamentForm({ role, user }) {
         />
       </div>
 
-      {/* Wskazówki */}
+      {/* Pozostałe pola */}
       <div>
         <label className="block font-semibold mb-2">
           Wskazówki dojazdu i informacje o miejscu
         </label>
         <textarea
           name="travelInfo"
-          placeholder="np. Hala SP 4, wejście od ul. Mickiewicza, parking za szkołą..."
           value={form.travelInfo}
           onChange={handleChange}
           rows="3"
@@ -279,13 +308,11 @@ export default function TournamentForm({ role, user }) {
         ></textarea>
       </div>
 
-      {/* Nagrody / Atrakcje */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">Przewidywane nagrody</label>
           <textarea
             name="prizes"
-            placeholder="np. Puchary, medale, vouchery..."
             value={form.prizes}
             onChange={handleChange}
             rows="3"
@@ -296,7 +323,6 @@ export default function TournamentForm({ role, user }) {
           <label className="block font-semibold mb-2">Atrakcje i udogodnienia</label>
           <textarea
             name="attractions"
-            placeholder="np. strefa kibica, grill, muzyka..."
             value={form.attractions}
             onChange={handleChange}
             rows="3"
@@ -305,12 +331,10 @@ export default function TournamentForm({ role, user }) {
         </div>
       </div>
 
-      {/* Wymogi */}
       <div>
         <label className="block font-semibold mb-2">Wymogi organizatora</label>
         <textarea
           name="requirements"
-          placeholder="np. własne piłki, obowiązkowe zgłoszenie do 10 maja..."
           value={form.requirements}
           onChange={handleChange}
           rows="3"
@@ -318,7 +342,6 @@ export default function TournamentForm({ role, user }) {
         ></textarea>
       </div>
 
-      {/* Obsługa sędziowska */}
       <div>
         <label className="block font-semibold mb-2">Obsługa sędziowska</label>
         <div className="flex flex-col gap-2">
@@ -336,14 +359,12 @@ export default function TournamentForm({ role, user }) {
         </div>
       </div>
 
-      {/* Obiad */}
       <div>
         <label className="block font-semibold mb-2">
           Informacje o obiedzie dla zespołów
         </label>
         <textarea
           name="mealInfo"
-          placeholder="np. Obiad w stołówce szkolnej o 13:00..."
           value={form.mealInfo}
           onChange={handleChange}
           rows="2"
@@ -351,14 +372,12 @@ export default function TournamentForm({ role, user }) {
         ></textarea>
       </div>
 
-      {/* Wpisowe / FB */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">Wpisowe (zł)</label>
           <input
             type="number"
             name="entryFee"
-            placeholder="np. 100"
             value={form.entryFee}
             onChange={handleChange}
             className="border rounded-lg w-full p-3"
@@ -371,7 +390,6 @@ export default function TournamentForm({ role, user }) {
           <input
             type="text"
             name="facebookLink"
-            placeholder="https://facebook.com/..."
             value={form.facebookLink}
             onChange={handleChange}
             className="border rounded-lg w-full p-3"
@@ -379,12 +397,10 @@ export default function TournamentForm({ role, user }) {
         </div>
       </div>
 
-      {/* Regulamin */}
       <div>
         <label className="block font-semibold mb-2">Regulamin turnieju</label>
         <textarea
           name="rules"
-          placeholder="Wklej tutaj regulamin lub zasady rozgrywek..."
           value={form.rules}
           onChange={handleChange}
           rows="3"
@@ -392,8 +408,8 @@ export default function TournamentForm({ role, user }) {
         ></textarea>
       </div>
 
-      {/* Checkbox kredytowy — tylko organizator */}
-      {(user?.role === "organizator" || role === "organizator") && (
+      {/* Checkbox kredytowy tylko przy tworzeniu */}
+      {!initialData && (user?.role === "organizator" || role === "organizator") && (
         <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 p-3 rounded-lg">
           <input
             type="checkbox"
@@ -404,12 +420,12 @@ export default function TournamentForm({ role, user }) {
             required
           />
           <span className="text-sm text-gray-700">
-            Potwierdzam, że utworzenie turnieju pobierze <b>1 kredyt</b> z mojego konta.
+            Potwierdzam, że utworzenie turnieju pobiera <b>1 kredyt</b> z mojego konta.
           </span>
         </div>
       )}
 
-      {/* Błędy */}
+      {/* Błąd */}
       {error && (
         <p className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-center font-medium">
           {error}
@@ -422,7 +438,7 @@ export default function TournamentForm({ role, user }) {
         disabled={loading}
         className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50"
       >
-        {loading ? "⏳ Tworzenie..." : "Utwórz turniej"}
+        {loading ? "⏳ Przetwarzanie..." : buttonLabel}
       </button>
     </form>
   );

@@ -6,16 +6,14 @@ import { sendTournamentNotification } from "@/lib/mailer";
 
 // 🔸 Weryfikacja tokena JWT
 async function getUserFromSessionCookie() {
-  const cookieStore = cookies();
-  const token = cookieStore.get("session")?.value;
+  const token = cookies().get("session")?.value;
   if (!token) return null;
 
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     const { payload } = await jwtVerify(token, secret);
-    return payload;
-  } catch (err) {
-    console.error("❌ JWT verify error:", err);
+    return payload; // { id, role, email }
+  } catch {
     return null;
   }
 }
@@ -51,6 +49,7 @@ export async function POST(req) {
       travelInfo,
     } = body;
 
+    // 🔹 Pobierz dane użytkownika
     const { data: dbUser, error: userErr } = await supabaseServer
       .from("users")
       .select("id, email, first_name, role, credits")
@@ -70,13 +69,19 @@ export async function POST(req) {
         { status: 403 }
       );
 
-    // Status
-    let status = role === "admin" ? "active" : dbUser.credits > 0 ? "active" : "pending";
+    // 🔹 Ustal status (aktywny tylko jeśli są kredyty lub admin)
+    let status = "pending";
+    if (role === "admin") status = "active";
+    else if (dbUser.credits > 0) status = "active";
 
-    // Dane
+    // 🔹 Przygotuj dane turnieju
     const tournamentData = {
       name,
-      category: Array.isArray(category) ? category : category ? [category] : null,
+      category: Array.isArray(category)
+        ? category
+        : category
+        ? [category]
+        : [],
       location,
       date_start: startDate,
       date_end: endDate,
@@ -89,7 +94,7 @@ export async function POST(req) {
       prizes,
       attractions,
       requirements,
-      referees: Array.isArray(referees) ? referees : null,
+      referees: Array.isArray(referees) ? referees : [],
       meal_info: mealInfo,
       entry_fee: entryFee ? parseFloat(entryFee) : null,
       facebook_link: facebookLink,
@@ -101,7 +106,7 @@ export async function POST(req) {
       updated_at: new Date().toISOString(),
     };
 
-    // Zapis
+    // 🔹 Wstaw turniej
     const { data: inserted, error: insertErr } = await supabaseServer
       .from("tournaments")
       .insert([tournamentData])
@@ -116,17 +121,20 @@ export async function POST(req) {
       );
     }
 
-    // Aktualizacja kredytów
+    // 🔹 Odejmij kredyt (tylko organizator z aktywnym turniejem)
     if (role === "organizator" && status === "active" && dbUser.credits > 0) {
-      await supabaseServer
+      const { error: creditErr } = await supabaseServer
         .from("users")
         .update({ credits: dbUser.credits - 1 })
         .eq("id", dbUser.id);
+
+      if (creditErr)
+        console.warn("⚠️ Błąd przy aktualizacji kredytu:", creditErr);
     }
 
-    // Powiadomienia e-mail
+    // 🔹 Powiadomienia e-mail
     if (role === "organizator") {
-      // 🔹 Admini
+      // Admini
       const { data: admins } = await supabaseServer
         .from("users")
         .select("email")
@@ -145,7 +153,7 @@ export async function POST(req) {
         });
       }
 
-      // 🔹 Organizator
+      // Organizator
       await sendTournamentNotification({
         organizerName: dbUser.first_name,
         organizerEmail: dbUser.email,
@@ -156,12 +164,13 @@ export async function POST(req) {
       });
     }
 
+    // 🔹 Zwróć odpowiedź
     return NextResponse.json({
       success: true,
       message:
         status === "active"
           ? "Turniej został utworzony i aktywowany."
-          : "Turniej oczekuje na akceptację administratora.",
+          : "Turniej został utworzony, ale oczekuje na aktywację (brak kredytów).",
       status,
       tournament: inserted,
     });
