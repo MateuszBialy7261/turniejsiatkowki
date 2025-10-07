@@ -12,10 +12,14 @@ export default function OrganizerDashboard() {
     fetch("/api/me", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
-        if (data.loggedIn) {
-          setUser(data);
-        }
-      })
+      if (data.loggedIn) {
+        setUser({
+          ...data,
+          firstName: data.first_name || data.firstName || "",
+        });
+      }
+})
+
       .finally(() => setLoading(false));
   }, []);
 

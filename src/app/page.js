@@ -35,21 +35,26 @@ export default function Home() {
   return (
     <main className="flex-grow w-full p-8 space-y-8 text-gray-800">
 
-      {/* 💬 Kafelek powitalny */}
-      {user && (
-        <div className="bg-gradient-to-r from-blue-200 to-blue-100 rounded-2xl shadow-md p-6 text-center">
-          <h2 className="text-2xl font-bold text-gray-800">
-            👋 Cześć {user.firstName}!
-          </h2>
-          <p className="text-gray-700 mt-2 text-lg flex items-center justify-center gap-2">
-            Zalogowano jako{" "}
-            <span className={`font-semibold ${roleDisplay(user.role).color}`}>
-              {roleDisplay(user.role).icon} {roleDisplay(user.role).label}
-            </span>
-            . Miło Cię znów widzieć! 🎉
-          </p>
-        </div>
-      )}
+   {/* 💬 Kafelek powitalny — RESPONSYWNY */}
+{user && (
+  <div className="bg-gradient-to-r from-blue-200 to-blue-100 rounded-2xl shadow-md 
+                  p-5 sm:p-6 text-center space-y-2 sm:space-y-3 
+                  max-w-full overflow-hidden">
+    <h2 className="text-xl sm:text-2xl font-bold text-gray-800 break-words leading-tight">
+      👋 Cześć {user.firstName}!
+    </h2>
+
+    <p className="text-gray-700 mt-1 sm:mt-2 text-base sm:text-lg flex flex-wrap items-center justify-center gap-2 leading-snug">
+      Zalogowano jako{" "}
+      <span className={`font-semibold ${roleDisplay(user.role).color} flex items-center gap-1`}>
+        <span>{roleDisplay(user.role).icon}</span> {roleDisplay(user.role).label}
+      </span>
+      <span className="hidden sm:inline">•</span> 
+      <span className="block sm:inline">Miło Cię znów widzieć! 🎉</span>
+    </p>
+  </div>
+)}
+
 
       {/* 🚀 Animowany przycisk do panelu */}
       {user ? (
