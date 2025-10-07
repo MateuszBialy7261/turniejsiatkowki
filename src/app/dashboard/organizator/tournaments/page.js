@@ -37,6 +37,31 @@ export default function OrganizerTournamentsPage() {
     fetchTournaments();
   }, []);
 
+  // 🔸 Status czasowy (trwa / zaplanowany / odbył się)
+  const getTimeStatus = (start, end) => {
+    if (!start || !end) return "Nieznany";
+    const now = new Date();
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
+    if (now < startDate) return "Zaplanowany";
+    if (now >= startDate && now <= endDate) return "Trwa";
+    return "Odbył się";
+  };
+
+  const getTimeStatusStyle = (status) => {
+    switch (status) {
+      case "Trwa":
+        return "bg-green-100 text-green-700";
+      case "Zaplanowany":
+        return "bg-blue-100 text-blue-700";
+      case "Odbył się":
+        return "bg-gray-100 text-gray-600";
+      default:
+        return "bg-gray-50 text-gray-500";
+    }
+  };
+
   return (
     <main className="p-6 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">
@@ -61,45 +86,68 @@ export default function OrganizerTournamentsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tournaments.map((t) => (
-          <div
-            key={t.id}
-            className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition p-5 flex flex-col justify-between"
-          >
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800 mb-1">{t.name}</h2>
-              <p className="text-gray-600 text-sm mb-1">📍 {t.location || "brak lokalizacji"}</p>
-              <p className="text-gray-500 text-sm">
-                📅 {t.date_start ? new Date(t.date_start).toLocaleDateString() : "brak daty"}
-              </p>
-            </div>
+        {tournaments.map((t) => {
+          const timeStatus = getTimeStatus(t.date_start, t.date_end);
+          const formattedDate = t.date_start
+            ? new Date(t.date_start).toLocaleDateString("pl-PL")
+            : "brak daty";
+          const formattedTime = t.start_time
+            ? t.start_time.slice(0, 5)
+            : "—";
 
-            <div className="mt-4 flex items-center justify-between">
-              <span
-                className={`text-sm font-semibold px-3 py-1 rounded-full ${
-                  t.status === "active"
-                    ? "bg-green-100 text-green-700"
+          return (
+            <div
+              key={t.id}
+              className="bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition p-5 flex flex-col justify-between"
+            >
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-1">{t.name}</h2>
+                <p className="text-gray-600 text-sm mb-1">
+                  🎯 {t.category?.join(", ") || "brak kategorii"}
+                </p>
+                <p className="text-gray-500 text-sm">
+                  📅 {formattedDate} o {formattedTime}
+                </p>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
+                {/* 🔹 Status administracyjny */}
+                <span
+                  className={`text-sm font-semibold px-3 py-1 rounded-full ${
+                    t.status === "active"
+                      ? "bg-green-100 text-green-700"
+                      : t.status === "pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {t.status === "active"
+                    ? "Aktywny"
                     : t.status === "pending"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                {t.status === "active"
-                  ? "Aktywny"
-                  : t.status === "pending"
-                  ? "Oczekuje"
-                  : "Zakończony"}
-              </span>
+                    ? "Oczekuje"
+                    : "Zakończony"}
+                </span>
 
-              <Link
-                href={`/dashboard/organizator/tournaments/${t.id}`}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                ✏️ Edytuj
-              </Link>
+                {/* 🔹 Status czasowy */}
+                <span
+                  className={`text-sm font-medium px-3 py-1 rounded-full ${getTimeStatusStyle(
+                    timeStatus
+                  )}`}
+                >
+                  {timeStatus}
+                </span>
+
+                {/* 🔹 Edycja */}
+                <Link
+                  href={`/dashboard/organizator/tournaments/${t.id}`}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium ml-auto"
+                >
+                  ✏️ Edytuj
+                </Link>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
