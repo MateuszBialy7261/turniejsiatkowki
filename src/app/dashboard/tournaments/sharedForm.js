@@ -1,15 +1,18 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 const MapPicker = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
 export default function TournamentForm({
   role,
   user,
-  initialData = null,
-  onSubmit = null,
-  buttonLabel = "Utwórz turniej",
+  mode = "create",            // "create" | "edit"
+  tournamentId = null,        // w trybie "edit" wymagane
 }) {
+  const isOrganizer = (user?.role || role) === "organizator";
+  const isAdmin = (user?.role || role) === "admin";
+
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -31,53 +34,74 @@ export default function TournamentForm({
     facebookLink: "",
     rules: "",
     travelInfo: "",
-    confirmCredit: false,
+    confirmCredit: false, // tylko przy create dla organizatora
   });
 
+  const [status, setStatus] = useState(null);     // active | pending | finished
   const [loading, setLoading] = useState(false);
+  const [actLoading, setActLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [status, setStatus] = useState(null);
-
-  // 🔹 Jeśli przekazano dane początkowe (np. przy edycji), wczytaj je do formularza
-  useEffect(() => {
-    if (initialData) {
-      setForm((prev) => ({
-        ...prev,
-        ...initialData,
-        referees: initialData.referees || [],
-        confirmCredit: false, // reset przy edycji
-      }));
-    }
-  }, [initialData]);
 
   const categories = [
-    "Rzucanka",
-    "Single",
-    "Dwójki dziewcząt",
-    "Dwójki chłopców",
-    "Trójki dziewcząt",
-    "Trójki chłopców",
-    "Czwórki dziewcząt",
-    "Czwórki chłopców",
-    "Młodziczki",
-    "Młodzicy",
-    "Kadetki",
-    "Kadeci",
-    "Juniorki",
-    "Juniorzy",
-    "Seniorki",
-    "Seniorzy",
+    "Rzucanka","Single","Dwójki dziewcząt","Dwójki chłopców","Trójki dziewcząt","Trójki chłopców",
+    "Czwórki dziewcząt","Czwórki chłopców","Młodziczki","Młodzicy","Kadetki","Kadeci",
+    "Juniorki","Juniorzy","Seniorki","Seniorzy",
   ];
-
   const refereeOptions = ["Sędziowie licencjonowani", "Sędziowie klubowi"];
+
+  // helper: time from "HH:MM:SS" -> "HH:MM"
+  const t5 = (t) => (t ? String(t).slice(0, 5) : "");
+
+  // 🔹 W trybie EDIT ładujemy dane turnieju
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      if (mode !== "edit" || !tournamentId) return;
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}`, { credentials: "include" });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data?.error || "Nie udało się pobrać danych turnieju.");
+          return;
+        }
+        if (ignore) return;
+
+        setForm({
+          name: data.name || "",
+          category: Array.isArray(data.category) ? (data.category[0] || "") : (data.category || ""),
+          startDate: data.date_start || "",
+          startTime: t5(data.start_time),
+          endDate: data.date_end || "",
+          endTime: t5(data.end_time),
+          openingTime: t5(data.opening_time),
+          briefingTime: t5(data.briefing_time),
+          location: data.location || "",
+          latitude: data.latitude ?? "",
+          longitude: data.longitude ?? "",
+          prizes: data.prizes || "",
+          attractions: data.attractions || "",
+          requirements: data.requirements || "",
+          referees: data.referees || [],
+          mealInfo: data.meal_info || "",
+          entryFee: data.entry_fee ?? "",
+          facebookLink: data.facebook_link || "",
+          rules: data.rules || "",
+          travelInfo: data.travel_info || "",
+          confirmCredit: false,
+        });
+        setStatus(data.status || null);
+      } catch {
+        setError("Błąd połączenia.");
+      }
+    }
+    load();
+    return () => { ignore = true; };
+  }, [mode, tournamentId]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
   const handleCheckboxChange = (option) => {
@@ -92,18 +116,13 @@ export default function TournamentForm({
   const validateForm = () => {
     if (!form.name.trim()) return "Podaj nazwę turnieju.";
     if (!form.category.trim()) return "Wybierz kategorię.";
-    if (!form.startDate || !form.endDate)
-      return "Podaj daty rozpoczęcia i zakończenia.";
+    if (!form.startDate || !form.endDate) return "Podaj daty rozpoczęcia i zakończenia.";
     if (!form.location.trim()) return "Podaj lokalizację.";
 
-    if (
-      (user?.role === "organizator" || role === "organizator") &&
-      !initialData && // tylko przy tworzeniu, nie przy edycji
-      !form.confirmCredit
-    ) {
+    // tylko w CREATE dla organizatora
+    if (mode === "create" && isOrganizer && !form.confirmCredit) {
       return "Musisz potwierdzić, że utworzenie turnieju pobiera jeden kredyt.";
     }
-
     return null;
   };
 
@@ -112,44 +131,66 @@ export default function TournamentForm({
     setError("");
     setLoading(true);
 
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    const v = validateForm();
+    if (v) {
+      setError(v);
       setLoading(false);
       return;
     }
 
     try {
-      // 🔹 Jeśli komponent ma przekazany własny handler (np. edycja)
-      if (onSubmit) {
-        await onSubmit(form);
-        setLoading(false);
-        return;
-      }
+      const url =
+        mode === "edit" && tournamentId
+          ? `/api/tournaments/${tournamentId}`
+          : "/api/tournaments/create";
 
-      // 🔹 Domyślna obsługa tworzenia nowego turnieju
-      const res = await fetch("/api/tournaments/create", {
-        method: "POST",
+      const method = mode === "edit" ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ ...form, role: user?.role || role }),
       });
 
       const data = await res.json();
-      if (res.ok) {
-        setSuccess(true);
-        setStatus(data.status);
+      if (!res.ok) {
+        setError(data?.error || "Wystąpił błąd podczas zapisu.");
       } else {
-        setError(data.error || "Wystąpił błąd przy tworzeniu turnieju.");
+        setSuccess(true);
+        if (data.status) setStatus(data.status);
       }
-    } catch (err) {
+    } catch {
       setError("Błąd połączenia z serwerem.");
     }
-
     setLoading(false);
   };
 
-  if (success) {
+  // 🔸 AKTYWACJA (status -> active)
+  const handleActivate = async () => {
+    if (!tournamentId) return;
+    setError("");
+    setActLoading(true);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "active" }), // częściowy update
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data?.error || "Nie udało się aktywować turnieju.");
+      } else {
+        setStatus("active");
+      }
+    } catch {
+      setError("Błąd połączenia podczas aktywacji.");
+    }
+    setActLoading(false);
+  };
+
+  if (success && mode === "create") {
     return (
       <div className="text-center py-10">
         <h2 className="text-2xl font-semibold text-green-600 mb-2">
@@ -157,8 +198,8 @@ export default function TournamentForm({
         </h2>
         {status === "pending" ? (
           <p className="text-yellow-600">
-            Turniej utworzony, jednak został{" "}
-            <b>wstrzymany — brak dostępnych kredytów.</b>
+            Turniej utworzony, jednak musieliśmy go od razu zablokować —
+            <b> brak kredytów</b>. Skontaktuj się z administratorem lub dokup kredyty i aktywuj turniej.
           </p>
         ) : (
           <p className="text-green-700">Turniej jest aktywny.</p>
@@ -175,12 +216,19 @@ export default function TournamentForm({
       {/* Informacja */}
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
         Uzupełnij szczegóły turnieju. <br />
-        {user?.role === "organizator" || role === "organizator" ? (
-          <b>Uwaga:</b>
-        ) : null}{" "}
-        {user?.role === "organizator" || role === "organizator"
-          ? "Utworzenie turnieju pobiera jeden kredyt z Twojego konta."
-          : "Jako administrator możesz tworzyć turnieje bez ograniczeń."}
+        {isOrganizer ? (
+          <span><b>Uwaga:</b> utworzenie/aktywacja turnieju pobiera jeden kredyt.</span>
+        ) : (
+          <span>Jako administrator możesz aktywować turnieje bez kredytów.</span>
+        )}
+        {mode === "edit" && (
+          <div className="mt-2 text-gray-700">
+            Status:{" "}
+            <span className={`font-semibold ${status === "active" ? "text-green-600" : status === "pending" ? "text-amber-600" : "text-gray-600"}`}>
+              {status || "—"}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Nazwa */}
@@ -210,14 +258,15 @@ export default function TournamentForm({
             <option key={cat}>{cat}</option>
           ))}
         </select>
+        <p className="text-xs text-gray-500 mt-1">
+          W przyszłości możesz skopiować turniej i dodać kolejną kategorię.
+        </p>
       </div>
 
       {/* Daty i godziny */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-          <label className="block font-semibold mb-2">
-            Data i godzina rozpoczęcia *
-          </label>
+          <label className="block font-semibold mb-2">Data i godzina rozpoczęcia *</label>
           <input
             type="date"
             name="startDate"
@@ -234,9 +283,7 @@ export default function TournamentForm({
           />
         </div>
         <div>
-          <label className="block font-semibold mb-2">
-            Data i godzina zakończenia *
-          </label>
+          <label className="block font-semibold mb-2">Data i godzina zakończenia *</label>
           <input
             type="date"
             name="endDate"
@@ -257,9 +304,7 @@ export default function TournamentForm({
       {/* Godziny otwarcia i odprawy */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
-          <label className="block font-semibold mb-2">
-            Godzina otwarcia zawodów
-          </label>
+          <label className="block font-semibold mb-2">Godzina otwarcia zawodów</label>
           <input
             type="time"
             name="openingTime"
@@ -269,9 +314,7 @@ export default function TournamentForm({
           />
         </div>
         <div>
-          <label className="block font-semibold mb-2">
-            Odprawa z trenerami
-          </label>
+          <label className="block font-semibold mb-2">Odprawa z trenerami</label>
           <input
             type="time"
             name="briefingTime"
@@ -282,7 +325,7 @@ export default function TournamentForm({
         </div>
       </div>
 
-      {/* Lokalizacja */}
+      {/* Lokalizacja + mapa */}
       <div>
         <label className="block font-semibold mb-2">Lokalizacja turnieju *</label>
         <MapPicker
@@ -294,13 +337,12 @@ export default function TournamentForm({
         />
       </div>
 
-      {/* Pozostałe pola */}
+      {/* Wskazówki dojazdu */}
       <div>
-        <label className="block font-semibold mb-2">
-          Wskazówki dojazdu i informacje o miejscu
-        </label>
+        <label className="block font-semibold mb-2">Wskazówki dojazdu i informacje o miejscu</label>
         <textarea
           name="travelInfo"
+          placeholder="np. Hala SP 4, wejście od ul. Mickiewicza, parking za szkołą..."
           value={form.travelInfo}
           onChange={handleChange}
           rows="3"
@@ -308,11 +350,13 @@ export default function TournamentForm({
         ></textarea>
       </div>
 
+      {/* Nagrody / Atrakcje */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">Przewidywane nagrody</label>
           <textarea
             name="prizes"
+            placeholder="np. Puchary, medale, vouchery..."
             value={form.prizes}
             onChange={handleChange}
             rows="3"
@@ -323,6 +367,7 @@ export default function TournamentForm({
           <label className="block font-semibold mb-2">Atrakcje i udogodnienia</label>
           <textarea
             name="attractions"
+            placeholder="np. strefa kibica, grill, muzyka..."
             value={form.attractions}
             onChange={handleChange}
             rows="3"
@@ -331,10 +376,12 @@ export default function TournamentForm({
         </div>
       </div>
 
+      {/* Wymogi */}
       <div>
         <label className="block font-semibold mb-2">Wymogi organizatora</label>
         <textarea
           name="requirements"
+          placeholder="np. własne piłki, obowiązkowe zgłoszenie do 10 maja..."
           value={form.requirements}
           onChange={handleChange}
           rows="3"
@@ -342,6 +389,7 @@ export default function TournamentForm({
         ></textarea>
       </div>
 
+      {/* Obsługa sędziowska */}
       <div>
         <label className="block font-semibold mb-2">Obsługa sędziowska</label>
         <div className="flex flex-col gap-2">
@@ -359,12 +407,12 @@ export default function TournamentForm({
         </div>
       </div>
 
+      {/* Obiad */}
       <div>
-        <label className="block font-semibold mb-2">
-          Informacje o obiedzie dla zespołów
-        </label>
+        <label className="block font-semibold mb-2">Informacje o obiedzie dla zespołów</label>
         <textarea
           name="mealInfo"
+          placeholder="np. Obiad w stołówce szkolnej o 13:00..."
           value={form.mealInfo}
           onChange={handleChange}
           rows="2"
@@ -372,24 +420,25 @@ export default function TournamentForm({
         ></textarea>
       </div>
 
+      {/* Wpisowe / FB */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
           <label className="block font-semibold mb-2">Wpisowe (zł)</label>
           <input
             type="number"
             name="entryFee"
+            placeholder="np. 100"
             value={form.entryFee}
             onChange={handleChange}
             className="border rounded-lg w-full p-3"
           />
         </div>
         <div>
-          <label className="block font-semibold mb-2">
-            Link do wydarzenia (np. Facebook)
-          </label>
+          <label className="block font-semibold mb-2">Link do wydarzenia (np. Facebook)</label>
           <input
             type="text"
             name="facebookLink"
+            placeholder="https://facebook.com/..."
             value={form.facebookLink}
             onChange={handleChange}
             className="border rounded-lg w-full p-3"
@@ -397,10 +446,12 @@ export default function TournamentForm({
         </div>
       </div>
 
+      {/* Regulamin */}
       <div>
         <label className="block font-semibold mb-2">Regulamin turnieju</label>
         <textarea
           name="rules"
+          placeholder="Wklej tutaj regulamin lub zasady rozgrywek..."
           value={form.rules}
           onChange={handleChange}
           rows="3"
@@ -408,8 +459,8 @@ export default function TournamentForm({
         ></textarea>
       </div>
 
-      {/* Checkbox kredytowy tylko przy tworzeniu */}
-      {!initialData && (user?.role === "organizator" || role === "organizator") && (
+      {/* Checkbox kredytowy — tylko w CREATE dla organizatora */}
+      {mode === "create" && isOrganizer && (
         <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 p-3 rounded-lg">
           <input
             type="checkbox"
@@ -420,26 +471,39 @@ export default function TournamentForm({
             required
           />
           <span className="text-sm text-gray-700">
-            Potwierdzam, że utworzenie turnieju pobiera <b>1 kredyt</b> z mojego konta.
+            Potwierdzam, że utworzenie turnieju pobierze <b>1 kredyt</b> z mojego konta.
           </span>
         </div>
       )}
 
-      {/* Błąd */}
+      {/* Błędy */}
       {error && (
         <p className="text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 text-center font-medium">
           {error}
         </p>
       )}
 
-      {/* Przycisk */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50"
-      >
-        {loading ? "⏳ Przetwarzanie..." : buttonLabel}
-      </button>
+      {/* Przyciski akcji */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-5 rounded-xl transition disabled:opacity-50"
+        >
+          {loading ? "⏳ Przetwarzanie..." : mode === "edit" ? "Zapisz zmiany" : "Utwórz turniej"}
+        </button>
+
+        {mode === "edit" && status !== "active" && (
+          <button
+            type="button"
+            onClick={handleActivate}
+            disabled={actLoading}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-5 rounded-xl transition disabled:opacity-50"
+          >
+            {actLoading ? "⏳ Aktywuję..." : isAdmin ? "Aktywuj (bez kredytu)" : "Aktywuj turniej"}
+          </button>
+        )}
+      </div>
     </form>
   );
 }
