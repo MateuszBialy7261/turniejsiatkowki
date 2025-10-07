@@ -10,9 +10,10 @@ export async function GET(req) {
       return NextResponse.json({ error: "Brak ID organizatora." }, { status: 400 });
     }
 
+    // ✅ Pobieramy też category i start_time
     const { data, error } = await supabaseServer
       .from("tournaments")
-      .select("id, name, location, date_start, date_end, status")
+      .select("id, name, category, date_start, date_end, start_time, status")
       .eq("organizer_id", organizerId)
       .order("date_start", { ascending: true });
 
