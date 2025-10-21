@@ -35,7 +35,7 @@ export default function Home() {
   return (
     <main className="flex-grow w-full p-8 space-y-8 text-gray-800">
 
-   {/* 💬 Kafelek powitalny — RESPONSYWNY */}
+   {/* 💬 Kafelek powitalny */}
 {user && (
   <div className="bg-gradient-to-r from-blue-200 to-blue-100 rounded-2xl shadow-md 
                   p-5 sm:p-6 text-center space-y-2 sm:space-y-3 
